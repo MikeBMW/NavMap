@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 地图视图 -->
+    <com.tencent.tencentmap.mapsdk.maps.TextureMapView
+        android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 定位按钮 - 右下角 -->
+    <Button
+        android:id="@+id/btn_location"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:background="@drawable/ic_location_button"
+        android:contentDescription="定位按钮"
+        android:drawableTop="@drawable/ic_my_location"
+        android:gravity="center"
+        android:padding="8dp"
+        android:elevation="8dp" />
+
+    <!-- 跟随模式开关 - 右上角 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:orientation="horizontal"
+        android:background="@android:color/white"
+        android:elevation="8dp"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="12dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="跟随模式"
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:layout_marginEnd="4dp"/>
+
+        <Switch
+            android:id="@+id/switch_follow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:thumbTint="#4285F4"
+            android:trackTint="#BBDEFB"/>
+    </LinearLayout>
+
+</RelativeLayout>

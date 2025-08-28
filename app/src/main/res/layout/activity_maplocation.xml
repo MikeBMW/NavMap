@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/app_root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.tencent.tencentmap.mapsdk.maps.TextureMapView
+        android:id="@+id/maplocation_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:travel_mode="Driving"
+        />
+</FrameLayout>

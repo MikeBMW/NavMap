@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+apply from: '../gradle/dependencies.gradle'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdk versions.targetSdk
+
+    defaultConfig {
+        applicationId "com.tencent.navix.demo"
+        minSdk versions.minSdk
+        targetSdk versions.targetSdk
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your app.
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    // SDK 依赖
+    implementation(deps.foundation) {
+        changing = true
+    }
+//    implementation(deps.navigation)  // 使用完整导航 SDK
+    implementation(deps.core) {
+        changing = true
+    }
+    // 腾讯导航SDK（包含地图和定位）
+//    implementation deps.navigation
+    implementation(deps.tts) {
+        changing = true
+    }
+//    implementation deps.mapSdk
+//    implementation files("libs/navix-ext-release.aar")
+    implementation(deps.constraintLayout)
+    // 新添加的依赖
+//    implementation deps.location
+//    implementation deps.mapVector
+//    implementation deps.appcompat
+
+    // Demo 依赖
+    implementation 'androidx.core:core-ktx:1.5.0'
+    implementation "androidx.appcompat:appcompat:1.0.1"
+    implementation "androidx.recyclerview:recyclerview:1.2.1"
+//    implementation 'com.tencent.map:tencent-map-search-sdk:latest_version' // 替换为实际版本
+//    implementation 'com.tencent.map:tencent-map-search-sdk:5.4.0'
+
+
+//    implementation 'com.tencent.map:tencent-map-vector-sdk:5.6.0' // 使用最新版本
+//    implementation 'com.tencent.map.geolocation:TencentLocationSdk-openplatform:7.6.0'
+    //地图SDK依赖
+//    implementation 'com.tencent.map:tencent-map-vector-sdk:4.3.1'
+    //地图定位SDK依赖
+//    implementation 'com.tencent.map.geolocation:TencentLocationSdk-openplatform:7.2.6'
+    //地图组件库依赖
+//    implementation 'com.tencent.map:sdk-utilities:1.0.5'
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}

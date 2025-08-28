@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tv_location_info" type="id"/>  <!-- 自闭合，无内容 -->
+    <item name="et_destination" type="id"/>
+    <item name="btn_confirm_destination" type="id"/>
+    <item name="left_center_panel" type="id"/>
+    <item name="right_center_panel" type="id"/>
+    <!--    <item name="top_padding" type="id"/>-->
+</resources>
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<resources>-->
+<!--    <item name="tv_location_info" type="id">tv_location_info</item>-->
+<!--    <item name="et_destination" type="id">et_destination</item>-->
+<!--    <item name="btn_confirm_destination" type="id">btn_confirm_destination</item>-->
+<!--</resources>-->

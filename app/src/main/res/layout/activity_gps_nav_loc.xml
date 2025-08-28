@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 右上角垂直居中 -->
+    <LinearLayout
+        android:id="@+id/right_center_panel"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:padding="8dp"
+        android:background="#80000000">
+
+        <TextView
+            android:id="@+id/tv_location_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="定位..."
+            android:textSize="17sp"/>
+
+        <EditText
+            android:id="@+id/et_destination"
+            android:layout_width="200dp"
+            android:layout_height="39dp"
+            android:textSize="17sp"
+            android:hint="目的地"/>
+
+        <Button
+            android:id="@+id/btn_confirm_destination"
+            android:layout_width="wrap_content"
+            android:layout_height="39dp"
+            android:text="导航"
+            android:textSize="17sp"/>
+    </LinearLayout>
+</RelativeLayout>
+
+
+
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:id="@+id/left_center_panel"-->
+<!--    android:orientation="vertical"-->
+<!--    android:layout_width="wrap_content"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:padding="4dp"-->
+<!--    android:background="#80000000">-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/tv_location_info"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="定位..."-->
+<!--        android:textSize="10sp"/>-->
+
+<!--    <EditText-->
+<!--        android:id="@+id/et_destination"-->
+<!--        android:layout_width="70dp"-->
+<!--        android:layout_height="32dp"-->
+<!--        android:textSize="10sp"-->
+<!--        android:hint="目的地"/>-->
+
+<!--    <Button-->
+<!--        android:id="@+id/btn_confirm_destination"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="32dp"-->
+<!--        android:text="导航"-->
+<!--        android:textSize="10sp"/>-->
+<!--</LinearLayout>-->
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:orientation="horizontal"-->
+<!--    android:padding="8dp"-->
+<!--    android:layout_gravity="bottom"-->
+<!--    android:background="#B3B3B3">-->
+
+<!--    &lt;!&ndash; 最左侧：定位信息 &ndash;&gt;-->
+<!--    <TextView-->
+<!--        android:id="@+id/tv_location_info"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="定位..."-->
+<!--        android:textSize="14sp"-->
+<!--        android:gravity="center_vertical"/>-->
+
+<!--    &lt;!&ndash; 中间：输入框，占剩余空间 &ndash;&gt;-->
+<!--    <EditText-->
+<!--        android:id="@+id/et_destination"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_weight="1"-->
+<!--        android:hint="目的地"-->
+<!--        android:inputType="text"-->
+<!--        android:padding="4dp"-->
+<!--        android:layout_marginStart="6dp"/>-->
+
+<!--    &lt;!&ndash; 最右侧：按钮 &ndash;&gt;-->
+<!--    <Button-->
+<!--        android:id="@+id/btn_confirm_destination"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="导航"-->
+<!--        android:layout_marginStart="6dp"/>-->
+<!--</LinearLayout>-->
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:orientation="vertical"-->
+<!--    android:padding="8dp"-->
+<!--    android:layout_gravity="bottom"-->
+<!--    android:background="#B3B3B3"> &lt;!&ndash; #CCFFFFFF半透明白色背景，避免遮挡地图  B3B3B3半透明灰色。 &ndash;&gt;-->
+
+<!--    &lt;!&ndash; 定位信息显示 &ndash;&gt;-->
+<!--    <TextView-->
+<!--        android:id="@+id/tv_location_info"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="正在获取定位..."-->
+<!--        android:textSize="16sp"-->
+<!--        android:layout_marginBottom="8dp"/>-->
+
+<!--    &lt;!&ndash; 目的地输入框 &ndash;&gt;-->
+<!--    <EditText-->
+<!--        android:id="@+id/et_destination"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:hint="请输入目的地地址或经纬度（如：北京市天安门）"-->
+<!--        android:inputType="text"-->
+<!--        android:layout_marginBottom="8dp"/>-->
+
+<!--    &lt;!&ndash; 确认按钮 &ndash;&gt;-->
+<!--    <Button-->
+<!--        android:id="@+id/btn_confirm_destination"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="开始导航"/>-->
+
+<!--</LinearLayout>-->
+

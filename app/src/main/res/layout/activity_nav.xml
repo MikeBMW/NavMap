@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/app_root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.tencent.navix.api.layer.NavigatorViewStub
+        android:id="@+id/navigator_view_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:travel_mode="Driving"
+        />
+</FrameLayout>
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--    android:orientation="vertical"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent">-->
+
+<!--    &lt;!&ndash; 1. 预留顶部区域（高度 = 输入栏高度 + 一点安全边距） &ndash;&gt;-->
+<!--    <Space-->
+<!--        android:id="@+id/top_padding"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="120dp" />-->
+
+<!--    &lt;!&ndash; 2. 地图占剩余全部 &ndash;&gt;-->
+<!--    <com.tencent.navix.api.layer.NavigatorViewStub-->
+<!--        android:id="@+id/navigator_view_stub"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1"-->
+<!--        app:travel_mode="Driving" />-->
+<!--</LinearLayout>-->

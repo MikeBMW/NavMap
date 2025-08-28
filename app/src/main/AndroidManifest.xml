@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.tencent.navix.demo">
+
+    <!-- 通过GPS得到精确位置 -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- 通过网络得到粗略位置 -->
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE" />
+
+<!--    <uses-permission-->
+<!--        android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
+
+<!--    <uses-permission-->
+<!--        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />-->
+
+<!--    <uses-permission-->
+<!--        android:name="android.permission.READ_PHONE_STATE" />-->
+
+    <application
+        android:name=".NavApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+
+        <meta-data
+            android:name="TencentMapSDK"
+            android:value="WHQBZ-7VMR4-UAPU3-F6TFQ-OJCS5-ZSFHN" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".route.RouteRequestActivity" />
+        <activity android:name=".navi.GpsNavActivity" />
+        <activity android:name=".navi.WalkSimNavActivity" />
+        <activity android:name=".navi.WalkGpsNavActivity" />
+        <activity android:name=".navi.RideSimNavActivity" />
+        <activity android:name=".navi.RideGpsNavActivity" />
+        <activity android:name=".navi.SimulationNavActivity" />
+        <activity android:name=".navi.PlaybackNavActivity" />
+        <activity android:name=".navi.CustomViewNavActivity" />
+        <activity android:name=".navi.CustomMarkerNavActivity" />
+        <activity android:name=".navi.CustomLocatorNavActivity" />
+        <activity android:name=".navi.CustomRouteStyleNavActivity" />
+        <activity android:name=".navi.DialogBasedNavActivity" />
+        <activity android:name=".navi.SimulationSliceNavActivity" />
+        <activity android:name=".view.CustomEnlargedMapActivity" />
+        <activity android:name=".route.CustomRouteRequestActivity" />
+        <activity android:name=".route.TruckRouteRequestActivity" />
+        <activity android:name=".route.TruckRoutePlanActivity" />
+        <activity android:name=".navi.LandscapeSimulationNavActivity"
+            android:configChanges="keyboardHidden|screenSize|orientation"
+            />
+        <activity android:name=".route.MapActivity" />
+        <activity
+            android:name="com.tencent.example.location.DemoMapActivity"
+            android:label="我的位置" />
+        <activity
+            android:name="com.tencent.navix.demo.navi.GpsNavLocActivity"
+            android:label="GpsNavLocActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize" />
+
+    </application>
+
+</manifest>

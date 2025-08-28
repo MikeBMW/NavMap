@@ -1,0 +1,319 @@
+package com.tencent.navix.demo.route;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.Switch;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.tencent.navix.demo.R;
+import com.tencent.tencentmap.mapsdk.maps.CameraUpdateFactory;
+import com.tencent.tencentmap.mapsdk.maps.LocationSource;
+import com.tencent.tencentmap.mapsdk.maps.TencentMap;
+import com.tencent.tencentmap.mapsdk.maps.TextureMapView;
+import com.tencent.tencentmap.mapsdk.maps.UiSettings;
+import com.tencent.tencentmap.mapsdk.maps.model.BitmapDescriptorFactory;
+import com.tencent.tencentmap.mapsdk.maps.model.LatLng;
+import com.tencent.tencentmap.mapsdk.maps.model.MyLocationStyle;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MapActivity extends AppCompatActivity {
+
+    private TextureMapView mapView;
+    private TencentMap tencentMap;
+    private boolean isFirstLoc = true;
+    private boolean isFollowing = true; // 是否开启位置跟随
+    // 在类中添加成员变量
+    private TencentMap.OnMyLocationChangeListener locationListener;
+
+    // UI 组件
+    private Button locationButton;
+    private Switch followSwitch;
+    private UiSettings uiSettings;
+
+    // 权限相关
+    private static final int PERMISSION_REQUEST_CODE = 1;
+    private List<String> missingPermissions = new ArrayList<>();
+    private static final String[] REQUIRED_PERMISSIONS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+    };
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_map);
+
+        // 初始化地图
+        mapView = findViewById(R.id.map_view);
+        tencentMap = mapView.getMap();
+        uiSettings = tencentMap.getUiSettings();
+        uiSettings.setZoomGesturesEnabled(true); // 启用缩放手势
+
+        // 初始化UI组件
+        locationButton = findViewById(R.id.btn_location);
+        followSwitch = findViewById(R.id.switch_follow);
+
+        // 检查权限
+        checkPermissions();
+
+        // 设置定位按钮点击事件
+        locationButton.setOnClickListener(v -> {
+            if (checkPermissions()) {
+                startLocationUpdates();
+                Toast.makeText(this, "开始定位", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 设置跟随开关
+//        followSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+//            isFollowing = isChecked;
+//            if (isFollowing) {
+//                // 如果开启跟随且有位置信息，移动到当前位置
+//                moveToCurrentLocation();
+//            }
+//        });
+        followSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            isFollowing = isChecked; // 修复这里的变量赋值
+            if (isChecked) {
+                // 获取当前位置并传递
+                Location location = tencentMap.getMyLocation();
+                if (location != null) {
+                    moveToCurrentLocation(location);
+                } else {
+                    Toast.makeText(this, "正在获取位置，请稍后...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+
+
+        // 配置定位样式
+        setupLocationStyle();
+        // 在onCreate末尾添加：
+        setupLocationListener();
+    }
+
+    // 实现监听器方法
+    private void setupLocationListener() {
+        locationListener = location -> {
+            // 当位置更新时触发
+//            if (location != null) {
+//                moveToCurrentLocation(location); // 修改方法接收Location参数
+//                isFirstLoc = false;
+//            }
+            if (location != null && isFollowing) { // 添加跟随状态检查
+                moveToCurrentLocation(location);
+                isFirstLoc = false;
+            }
+        };
+        tencentMap.setOnMyLocationChangeListener(locationListener);
+    }
+
+    // 配置定位样式
+    private void setupLocationStyle() {
+        MyLocationStyle locationStyle = new MyLocationStyle();
+        locationStyle.strokeColor(Color.TRANSPARENT); // 定位圈边框颜色
+//        locationStyle.radiusFillColor(Color.TRANSPARENT); // 定位圈填充颜色
+        locationStyle.anchor(0.5f, 0.5f); // 定位图标锚点
+//        locationStyle.myLocationIcon(BitmapDescriptorFactory.defaultMarker()); // 使用默认图标
+//        locationStyle.showAccuracyCircle(false); // 不显示精度圈
+        // 仅设置定位图标（使用最兼容的方式）
+//        try {
+//            locationStyle.icon(BitmapDescriptorFactory.defaultMarker());
+//        } catch (Exception e) {
+//            // 忽略错误
+//        }
+        try {
+            // 尝试旧版方法
+            locationStyle.getClass().getMethod("icon", com.tencent.tencentmap.mapsdk.maps.model.BitmapDescriptor.class);
+            locationStyle.icon(BitmapDescriptorFactory.defaultMarker());
+        } catch (Exception ex) {
+            // 如果都不存在，使用默认样式
+        }
+        try {
+            // 尝试旧版方法
+            locationStyle.getClass().getMethod("fillColor", int.class);
+            locationStyle.fillColor(Color.TRANSPARENT);
+        } catch (Exception ex) {
+            // 忽略
+        }
+
+
+        // 设置定位样式
+        tencentMap.setMyLocationStyle(locationStyle);
+    }
+
+    // 检查并请求权限
+    private boolean checkPermissions() {
+        missingPermissions.clear();
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(permission);
+            }
+        }
+
+        if (!missingPermissions.isEmpty()) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    missingPermissions.toArray(new String[0]),
+                    PERMISSION_REQUEST_CODE
+            );
+            return false;
+        }
+        return true;
+    }
+
+    // 开始定位更新
+    private void startLocationUpdates() {
+        // 重置首次定位标记
+        isFirstLoc = true;
+
+        // 启用定位图层
+        tencentMap.setMyLocationEnabled(true);
+
+
+
+        // 设置定位模式（使用6.x兼容方式）
+        uiSettings.setMyLocationButtonEnabled(true);
+        // 设置定位模式（跟随模式）
+        try {
+            Method setLocationSource = tencentMap.getClass().getMethod("setLocationSource", int.class);
+            setLocationSource.invoke(tencentMap, 1); // 1=跟随模式
+        } catch (Exception e) {
+            Log.e("MapActivity", "设置定位模式失败", e);
+        }
+
+    }
+
+    // 停止定位更新
+    private void stopLocationUpdates() {
+        // 禁用定位图层
+        tencentMap.setMyLocationEnabled(false);
+    }
+
+    // 移动到当前位置
+//    private void moveToCurrentLocation() {
+//        Location location = tencentMap.getMyLocation();
+//        if (location != null) {
+//            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+//            tencentMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
+//            isFirstLoc = false;
+//
+//            // 显示位置信息
+//            String locationInfo = String.format("位置: %.6f, %.6f\n精度: %.1f米",
+//                    location.getLatitude(), location.getLongitude(), location.getAccuracy());
+//            Toast.makeText(this, locationInfo, Toast.LENGTH_SHORT).show();
+//        } else if (isFirstLoc) {
+//            // 首次定位还未获取位置
+//            Toast.makeText(this, "正在获取位置...", Toast.LENGTH_SHORT).show();
+//        }
+//    }
+    private void moveToCurrentLocation(Location location) {
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        tencentMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
+
+        // 显示位置信息
+        String locationInfo = String.format("位置: %.6f, %.6f\n精度: %.1f米",
+                location.getLatitude(), location.getLongitude(), location.getAccuracy());
+        Toast.makeText(this, locationInfo, Toast.LENGTH_SHORT).show();
+        // 添加首次定位标记重置
+        isFirstLoc = false;
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+//                startLocationUpdates();
+                // 延迟确保定位服务就绪
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    startLocationUpdates();
+                }, 500);
+            } else {
+                Toast.makeText(this, "需要位置权限才能使用定位功能", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mapView.onStart();
+    }
+
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        mapView.onResume();
+//        // 如果已有权限，恢复定位
+//        if (checkPermissions()) {
+//            startLocationUpdates();
+//        }
+//    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (checkPermissions() && locationListener == null) {
+            setupLocationListener();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mapView.onPause(); // 需要调用地图的onPause
+        stopLocationUpdates(); // 停止定位更新
+        // 移除监听节省资源
+        if (tencentMap != null) {
+            tencentMap.setOnMyLocationChangeListener(null);
+        }
+        locationListener = null;
+    }
+
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//        mapView.onPause();
+//        stopLocationUpdates();
+//    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mapView.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mapView.onDestroy();
+        stopLocationUpdates();
+    }
+}
