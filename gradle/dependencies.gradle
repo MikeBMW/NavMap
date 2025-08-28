@@ -1,0 +1,40 @@
+ext {
+
+    versions = [
+        compileSdk: 34,
+        minSdk: 21,
+        targetSdk: 34,
+        // 添加 AppCompat 版本
+//        appcompat: "1.5.1"
+    ]
+
+    depsVersions = [
+        navSdk: "6.12.1",
+//        navSdk: "7.1.0",
+        foundation: "0.5.5.2da11df-lite",
+        constraintLayout: "2.1.4",
+        // 添加新库的版本号
+//        locationSdk: "7.6.0",
+//        mapVectorSdk: "5.6.0"
+        // 添加地图SDK版本 (需匹配导航SDK兼容版本)
+//        mapSdk: "5.6.0"
+    ]
+
+    deps = [
+        foundation: "com.tencent.openmap:foundation:${depsVersions.foundation}",
+        core: "com.tencent.map:tencent-map-nav-sdk-core:${depsVersions.navSdk}",
+        // 修改为完整导航 SDK
+//        navigation: "com.tencent.map:tencent-map-nav-sdk:${depsVersions.navSdk}",
+//        navigation: "com.tencent.map:tencent-map-nav-sdk:${depsVersions.navSdk}",
+        tts: "com.tencent.map:tencent-map-nav-sdk-tts:${depsVersions.navSdk}",
+
+        constraintLayout: "androidx.constraintlayout:constraintlayout:${depsVersions.constraintLayout}",
+        // 添加新库的依赖声明
+//        location: "com.tencent.map.geolocation:TencentLocationSdk-openplatform:${depsVersions.locationSdk}",
+//        mapVector: "com.tencent.map:tencent-map-vector-sdk:${depsVersions.mapVectorSdk}",
+        // 添加 AppCompat 依赖
+//        appcompat: "androidx.appcompat:appcompat:${versions.appcompat}"
+        // 添加地图SDK依赖
+//        mapSdk: "com.tencent.map:tencent-map-vector-sdk:${depsVersions.mapSdk}"
+    ]
+}
