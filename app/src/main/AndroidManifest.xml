@@ -18,6 +18,8 @@
 
     <uses-permission
         android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="true"/>
 
 <!--    <uses-permission-->
 <!--        android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
@@ -36,7 +38,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:largeHeap="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar">
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <meta-data
             android:name="TencentMapSDK"
@@ -79,6 +82,7 @@
             android:name="com.tencent.navix.demo.navi.GpsNavLocActivity"
             android:label="GpsNavLocActivity"
             android:configChanges="keyboardHidden|orientation|screenSize" />
+
 
     </application>
 

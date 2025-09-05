@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许任意 IP/域名明文通信 -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
+
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<network-security-config>-->
+<!--    <domain-config cleartextTrafficPermitted="true">-->
+<!--&lt;!&ndash;        <domain includeSubdomains="false">192.168.1.6</domain>&ndash;&gt;-->
+<!--&lt;!&ndash;        <domain includeSubdomains="false">192.168.223.71</domain>&ndash;&gt;-->
+<!--&lt;!&ndash;        <domain includeSubdomains="false">192.168.92.71</domain>&ndash;&gt;-->
+<!--&lt;!&ndash;        <domain includeSubdomains="false">192.168.0.71</domain>&ndash;&gt;-->
+<!--        <domain includeSubdomains="false">192.168.1.30</domain>-->
+<!--    </domain-config>-->
+<!--</network-security-config>-->
