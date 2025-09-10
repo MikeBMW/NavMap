@@ -1,6 +1,7 @@
 package com.tencent.navix.demo.navi;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
@@ -37,7 +38,9 @@ import com.tencent.navix.api.model.NavSearchPoint;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
 import com.tencent.navix.demo.BaseNavActivity;
+import com.tencent.navix.demo.MainActivity;
 import com.tencent.navix.demo.R;
+import com.tencent.navix.demo.utils.TencentGeoCoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -87,6 +90,11 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     private TextView tvLocationInfo;
     private EditText etIpPort;
 
+    // debug
+    private View debugPanel;
+    private TextView debugTitle, debugHex, debugFields;
+    private boolean debugCollapsed = false;
+
 
 
     @Override
@@ -116,6 +124,25 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         findViewById(R.id.btn_connect).setOnClickListener(v -> startWs());
 //        findViewById(R.id.btn_send).setOnClickListener(v -> sendWs("hello"));
 //        findViewById(R.id.btn_send_struct).setOnClickListener(v -> sendNavStructs());
+        // onCreate 里追加
+        findViewById(R.id.btn_options).setOnClickListener(v -> {
+            Intent i = new Intent(this, MainActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);  // 如果 MainActivity 已存在则拉到前台
+            startActivity(i);
+        });
+
+        // 放在 setContentView 之后
+        debugPanel   = findViewById(R.id.debug_panel);
+        debugTitle   = findViewById(R.id.debug_title);
+        debugHex     = findViewById(R.id.debug_hex);
+        debugFields  = findViewById(R.id.debug_fields);
+
+        debugTitle.setOnClickListener(v -> {
+            debugCollapsed = !debugCollapsed;
+            debugHex.setVisibility(debugCollapsed ? View.GONE : View.VISIBLE);
+            debugFields.setVisibility(debugCollapsed ? View.GONE : View.VISIBLE);
+            debugTitle.setText(debugCollapsed ? "调试信息（点我展开）" : "调试信息（点我折叠）");
+        });
 
     }
 
@@ -173,6 +200,9 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         }
 
         // 2. 解析目的地（地址转经纬度）
+        /**
+         * 使用腾讯 WebServiceAPI 解析地址
+         */
         parseDestination(destination, new OnDestinationParsedListener() {
             @Override
             public void onParsed(double lat, double lng) {
@@ -190,27 +220,40 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         });
     }
 
-
     private void parseDestination(String address, OnDestinationParsedListener listener) {
-        Geocoder geocoder = new Geocoder(this);
-        new Thread(() -> {
-            try {
-                // 地址解析（最多返回 1 个结果）
-                List<Address> addresses = geocoder.getFromLocationName(address, 1);
-                if (!addresses.isEmpty()) {
-                    Address addr = addresses.get(0);
-                    double lat = addr.getLatitude();
-                    double lng = addr.getLongitude();
-                    runOnUiThread(() -> listener.onParsed(lat, lng));
-                } else {
-                    runOnUiThread(() -> listener.onError("地址解析失败"));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                runOnUiThread(() -> listener.onError("网络或解析错误"));
+        TencentGeoCoder.geoCode(this, address, new TencentGeoCoder.GeoListener() {
+            @Override
+            public void onSuccess(double lat, double lng, String title) {
+                runOnUiThread(() -> listener.onParsed(lat, lng));
             }
-        }).start();
+
+            @Override
+            public void onError(String msg) {
+                runOnUiThread(() -> listener.onError(msg));
+            }
+        });
     }
+
+//    private void parseDestination(String address, OnDestinationParsedListener listener) {
+//        Geocoder geocoder = new Geocoder(this);
+//        new Thread(() -> {
+//            try {
+//                // 地址解析（最多返回 1 个结果）
+//                List<Address> addresses = geocoder.getFromLocationName(address, 1);
+//                if (!addresses.isEmpty()) {
+//                    Address addr = addresses.get(0);
+//                    double lat = addr.getLatitude();
+//                    double lng = addr.getLongitude();
+//                    runOnUiThread(() -> listener.onParsed(lat, lng));
+//                } else {
+//                    runOnUiThread(() -> listener.onError("地址解析失败"));
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                runOnUiThread(() -> listener.onError("网络或解析错误"));
+//            }
+//        }).start();
+//    }
 
     /**
      * 发起导航请求
@@ -775,6 +818,8 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             RouteOverview ro = buildRouteOverview();
             byte[] payload = packAll(ev, tl, ro);
             ws.send(ByteString.of(payload)); // 发送二进制
+            // 调试刷新
+            updateDebugPanel(payload, ev, tl, ro);
         } catch (Throwable t) {
             Log.e("WS-SEND", "sendNavStructs error", t);
         }
@@ -848,5 +893,31 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     }
     private static long toLong(Object v, long def) {
         return (v instanceof Number) ? ((Number) v).longValue() : def;
+    }
+
+    private void updateDebugPanel(byte[] buf,
+                                  TrafficEvent e,
+                                  TrafficLight l,
+                                  RouteOverview r) {
+        runOnUiThread(() -> {
+            // 16 进制
+            StringBuilder sb = new StringBuilder();
+            for (byte b : buf) sb.append(String.format("%02X ", b & 0xFF));
+            debugHex.setText(sb.toString().trim());
+
+            // 关键字段
+            String fields = String.format(
+                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元",
+                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
+                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
+                    r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF,
+                    r.totalFee / 10.0);
+            debugFields.setText(fields);
+
+            // 第一次收到数据时自动展开
+            if (debugPanel.getVisibility() == View.GONE) {
+                debugPanel.setVisibility(View.VISIBLE);
+            }
+        });
     }
 }

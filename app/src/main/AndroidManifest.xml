@@ -44,6 +44,9 @@
         <meta-data
             android:name="TencentMapSDK"
             android:value="WHQBZ-7VMR4-UAPU3-F6TFQ-OJCS5-ZSFHN" />
+        <meta-data
+            android:name="TencentMapWebServiceKey"
+            android:value="CJZBZ-5EXW4-2UQUY-FSM3S-TUXS3-PWFDF" />
 
         <activity
             android:name=".MainActivity"
@@ -81,7 +84,17 @@
         <activity
             android:name="com.tencent.navix.demo.navi.GpsNavLocActivity"
             android:label="GpsNavLocActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize" />
+            android:launchMode="singleTask"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true">
+
+            <!-- 关键：让它成为启动页 -->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+        </activity>
+
 
 
     </application>

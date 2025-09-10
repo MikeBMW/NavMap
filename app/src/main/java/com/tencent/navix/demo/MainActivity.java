@@ -44,10 +44,10 @@ import java.util.Objects;
 public class MainActivity extends BasePermissionActivity {
 
     Object[][] functions = {
+            {"项目定制：定位+导航功能", GpsNavLocActivity.class}, // 新增这一行，就能在主界面看到并点击启动了
             {"Map", MapActivity.class},
 //            {"定位", MapLocationActivity.class},
             {"定位功能", DemoMapActivity.class}, // 新增：添加定位页面入口
-            {"定位+导航功能", GpsNavLocActivity.class}, // 新增这一行，就能在主界面看到并点击启动了
             {"驾车路径规划", RouteRequestActivity.class},
             {"驾车真实导航", GpsNavActivity.class},
             {"驾车模拟导航", SimulationNavActivity.class},
