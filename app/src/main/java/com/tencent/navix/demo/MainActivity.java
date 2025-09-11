@@ -7,8 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+//import androidx.annotation.NonNull;
+//import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -70,7 +70,7 @@ public class MainActivity extends BasePermissionActivity {
     };
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ((TextView)findViewById(R.id.info_sdk_version)).setText("导航SDK版本: " + NavigatorZygote.with(this).context().getVersion());
@@ -84,14 +84,14 @@ public class MainActivity extends BasePermissionActivity {
     }
 
     private final RecyclerView.Adapter<SimpleViewHolder> adapter = new RecyclerView.Adapter<SimpleViewHolder>() {
-        @NonNull
+
         @Override
-        public SimpleViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        public SimpleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             return new SimpleViewHolder(LayoutInflater.from(MainActivity.this).inflate(R.layout.item_view, null));
         }
 
         @Override
-        public void onBindViewHolder(@NonNull SimpleViewHolder holder, int position) {
+        public void onBindViewHolder(SimpleViewHolder holder, int position) {
             holder.name.setText((String)functions[position][0]);
             holder.itemView.setOnClickListener(view -> MainActivity.this.startActivity(new Intent(MainActivity.this, (Class<?>) functions[holder.getBindingAdapterPosition()][1])));
         }
@@ -106,7 +106,7 @@ public class MainActivity extends BasePermissionActivity {
 
         final TextView name;
 
-        public SimpleViewHolder(@NonNull View itemView) {
+        public SimpleViewHolder(View itemView) {
             super(itemView);
             this.name = itemView.findViewById(R.id.item_view_name);
         }
