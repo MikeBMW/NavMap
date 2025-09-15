@@ -45,6 +45,7 @@ import com.tencent.navix.demo.utils.TencentWeather;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
 import java.util.List;
 
 //import com.tencent.map.search.SearchManager;
@@ -56,6 +57,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okio.ByteString;
@@ -79,6 +82,10 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     private double lastLat = Double.NaN;
     private double lastLon = Double.NaN;
     private long   lastTime = 0;
+
+    /* ================= 天气数据 ================= */
+    private String lastTemp = "25";   // 默认温度
+    private String lastDesc = "晴";   // 默认天气
 
     /* ================= UI ================= */
     private EditText etDestination;
@@ -125,7 +132,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         findViewById(R.id.btn_connect).setOnClickListener(v -> startWs());
 //        findViewById(R.id.btn_send).setOnClickListener(v -> sendWs("hello"));
 //        findViewById(R.id.btn_send_struct).setOnClickListener(v -> sendNavStructs());
-        // onCreate 里追加
         findViewById(R.id.btn_options).setOnClickListener(v -> {
             Intent i = new Intent(this, MainActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);  // 如果 MainActivity 已存在则拉到前台
@@ -145,6 +151,69 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         });
 
 
+    }
+
+    public static class CANWeather {
+        public byte routeHash;      // 7bit
+        public byte dataValid;      // 1bit
+        public byte weatherCode;    // 4bit
+        public byte tempConfidence; // 4bit  ← 原 temperature
+        public byte precipLevel;    // 3bit
+        public byte warnType;       // 3bit
+        public byte warnLevel;      // 2bit
+        public byte realTemperature;// 8bit  ← 原 reserved
+        public short totalDistance;
+        public short keyPoints;
+    }
+
+    private static final Map<String, Integer> WEATHER_CODE_MAP = new HashMap<>();
+    static {
+        WEATHER_CODE_MAP.put("晴", 0);
+        WEATHER_CODE_MAP.put("多云", 1);
+        WEATHER_CODE_MAP.put("阴", 2);
+        WEATHER_CODE_MAP.put("小雨", 3);
+        WEATHER_CODE_MAP.put("中雨", 4);
+        WEATHER_CODE_MAP.put("大雨", 5);
+        WEATHER_CODE_MAP.put("暴雨", 6);
+        WEATHER_CODE_MAP.put("雪", 7);
+        WEATHER_CODE_MAP.put("雾", 8);
+        WEATHER_CODE_MAP.put("霾", 9);
+        // 可以继续加
+    }
+
+    private CANWeather buildCANWeather(String temp, String desc) {
+        CANWeather w = new CANWeather();
+
+        /* 1. routeHash */
+        int routeHash = 0;
+        try { routeHash = Integer.parseInt(currentRoute.getRouteId()) & 0x7F; }
+        catch (Exception ignore) {}
+        w.routeHash = (byte) routeHash;
+
+        /* 2. dataValid */
+        w.dataValid = 1;
+
+        /* 3. weatherCode（4bit）*/
+//        w.weatherCode = (byte) (WEATHER_CODE_MAP.getOrDefault(desc, 0) & 0xF);
+        Integer code = WEATHER_CODE_MAP.get(desc);
+        w.weatherCode = (byte) ((code != null ? code : 0) & 0xF);
+
+        /* 4. tempConfidence（4bit）→ 这里简单用 15 表示“高置信度” */
+        w.tempConfidence = 15;   // 0~15，你可按业务改
+
+        /* 5. realTemperature（8bit，-40~50 直接存）*/
+        int tempInt = Integer.parseInt(temp);        // 原始摄氏度
+        w.realTemperature = (byte) (tempInt + 40);   // 0~90 正好占 1 Byte
+
+        /* 6. 其余字段保持旧逻辑 */
+        w.precipLevel = 0;
+        w.warnType    = 0;
+        w.warnLevel   = 0;
+        w.totalDistance = (short) (currentRoute == null ? 0 :
+                Math.min(currentRoute.getDistance(), 0xFFFF));
+        w.keyPoints   = 0;
+
+        return w;
     }
 
     private void initView() {
@@ -387,7 +456,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
 
             // 如果之前没算路成功，这里可以再次尝试算路（比如第一次定位完成后自动算路）
             if (currentRoute == null) {
-//                searchRouteAndStartNavigation();
                 Log.d("NavDebug", "导航为空，不再自动算路到北京");
             }
 
@@ -400,12 +468,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                         public void onSuccess(String json) {
                             try {
                                 Log.d("weather", "原始 json = " + json);
-//                                JSONObject w = JSON.parseObject(json)
-//                                        .getJSONObject("data");
-//
-//                                String temp = w.getString("temp");
-//                                String desc = w.getString("weather");
-//                                String icon = w.getString("weather_icon");
 
                                 JSONObject realtime = JSON.parseObject(json)
                                         .getJSONObject("result")
@@ -417,13 +479,10 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                                 String desc  = infos.getString("weather");                       // 多云
                                 String icon  = null;                                             // 暂无图标字段
 
-//                                runOnUiThread(() -> {
-//                                    tvTemp.setText(temp);
-//                                    tvDesc.setText(desc);
-////                                    Glide.with(GpsNavLocActivity.this)
-////                                            .load(icon)
-////                                            .into(ivWeather);
-//                                });
+                                // 1. 缓存
+                                lastTemp = temp;
+                                lastDesc = desc;
+
                             } catch (Exception e) {
                                 Log.e("weather", "解析失败", e);
                             }
@@ -482,12 +541,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         void onParsed(double lat, double lng);
         void onError(String error);
     }
-
-//    // 放在 GpsNavLocActivity 类内部即可
-//    private WebSocket ws;
-//    private OkHttpClient client = new OkHttpClient.Builder()
-//            .pingInterval(20, TimeUnit.SECONDS)   // 心跳
-//            .build();
 
 
     // 替换原来的 startWs() 方法
@@ -622,8 +675,8 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         public short positionIndex;
         public byte remainingTime;     // s
         public byte distanceToLight;   // m
-        public byte reserved1;
-        public byte reserved2;
+        public byte speed;
+        public byte lightCount;
     }
 
     private TrafficLight buildTrafficLight() {
@@ -671,14 +724,17 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                 remaining = 25 + (eta % 21);   // 25~45 s
             }
 
+            int speedKphInt = Math.min(255, Math.max(0, (int) speedKph)); // 0-255
+            int lightCount = toInt(ReflectUtil.getField(route, "trafficLightCount"), 0);
+
             /* 5. 打包 */
             l.nextLightId     = (byte) Math.min(positionIndex & 0xFF, 0xFF);
             l.stateFlags      = (byte) (((0 & 0x03) << 4) | ((state & 0x03) << 2));
             l.positionIndex   = (short) Math.min(positionIndex, 0xFFFF);
             l.remainingTime   = (byte) Math.min(remaining, 0xFF);
             l.distanceToLight = (byte) Math.min((int) dist, 0xFF);
-            l.reserved1 = 0;
-            l.reserved2 = 0;
+            l.speed = (byte) speedKphInt;   // 原名保留，实际存 speed
+            l.lightCount = (byte) Math.min(255, lightCount); // 0-255
 
         } catch (Throwable t) {
             Log.e("NavBuild", "buildTrafficLight error", t);
@@ -790,90 +846,8 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         return r;
     }
 
-    /* ==========================================================
-     * 天气结构体  8字节   与C端CAN_Weather完全对齐
-     * ========================================================== */
-    public static class CANWeather {
-        public byte routeHash;   // 7bit
-        public byte dataValid;   // 1bit
-        public byte weatherCode; // 4bit
-        public byte temperature; // 4bit
-        public byte precipLevel; // 3bit
-        public byte warnType;    // 3bit
-        public byte warnLevel;   // 2bit
-        public byte reserved;    // 8bit
-        public short totalDistance;
-        public short keyPoints;
-    }
-    /* ================= 天气构造 ================= */
-    private CANWeather buildCANWeather() {
-        CANWeather w = new CANWeather();
-        // 简单示例：可按业务映射
-        int routeHash = 0;
-        try {
-            routeHash = Integer.parseInt(currentRoute.getRouteId()) & 0x7F;
-        } catch (NumberFormatException ignore) {
-            routeHash = 0;   // 缺省值
-        }
-        w.routeHash   = (byte) routeHash;
-        w.dataValid   = 1;
-        w.weatherCode = 0;   // 0-15
-        w.temperature = 15;  // 0-15 （-40~50 映射）
-        w.precipLevel = 0;   // 0-7
-        w.warnType    = 0;   // 0-7
-        w.warnLevel   = 0;   // 0-3
-        w.reserved    = 0;
-        w.totalDistance = (short) (currentRoute == null ? 0 : Math.min(currentRoute.getDistance(), 0xFFFF));
-        w.keyPoints   = 0;
-        return w;
-    }
-
-//
-//    private byte[] packAll(TrafficEvent e, TrafficLight l, RouteOverview r, CANWeather w) {
-//        ByteBuffer bb = ByteBuffer.allocate(24);
-//        bb.order(ByteOrder.LITTLE_ENDIAN);
-//
-//        /* 1. TrafficEvent  7 字节  (BBHBBB) */
-//        bb.put(e.eventCount)               // 0
-//                .put(e.eventSummary)             // 1
-//                .putShort(e.nearestDistance)     // 2-3
-//                .put(e.nearestType)              // 4
-//                .put(e.nearestDelay)             // 5
-//                .put(e.severeCount)              // 6
-//                .put(e.accidentCount);           // 7 ← 共 7 字节
-//
-//        /* 2. TrafficLight  7 字节  (BBHBBB) */
-//        bb.put(l.nextLightId)              // 8
-//                .put(l.stateFlags)               // 9
-//                .putShort(l.positionIndex)       // 10-11
-//                .put(l.remainingTime)            // 12
-//                .put(l.distanceToLight)          // 13
-//                .put(l.reserved1)                // 14
-//                .put(l.reserved2);               // 15 ← 共 7 字节
-//
-//        /* 3. RouteOverview 10 字节 (HHBBHH) */
-//        bb.putShort(r.totalDistance)       // 16-17
-//                .put(r.tollDistancePct)          // 18
-//                .put(r.congestionFlags)          // 19
-//                .putShort(r.estimatedTime)       // 20-21  ← 15 的小端 short
-//                .putShort(r.totalFee);           // 22-23 ← 共 10 字节
-//
-//        /* 4. 打印 hex & 校验 */
-//        bb.rewind();
-//        short check = bb.getShort(20);     // 读 20-21 字节
-//        Log.d("Pack", "estimatedTime @20-21 = " + check);
-//
-//        byte[] buf = bb.array();
-//        StringBuilder sb = new StringBuilder();
-//        for (byte b : buf) sb.append(String.format("%02X ", b));
-//        Log.d("Pack", "24 B hex = " + sb.toString().trim());
-//
-//        return buf;
-//    }
-
     private volatile byte msgCounter = 0;   // 0~255 循环
     private byte[] packAll(TrafficEvent e, TrafficLight l, RouteOverview r, CANWeather w) {
-//        ByteBuffer bb = ByteBuffer.allocate(24);
         ByteBuffer bb = ByteBuffer.allocate(33);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -890,8 +864,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         bb.put(e.nearestDelay);
         bb.put(e.severeCount);
         bb.put(e.accidentCount);
-//        bb.put((byte) 0); // ✅ 补 1 字节到 8
-        Log.d("PackPosition", "shouble be 9, after TrafficEvent pos = " + bb.position());
 
         // 3. TrafficLight → 8 字节
         bb.put(l.nextLightId);
@@ -899,87 +871,38 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         bb.putShort(l.positionIndex);
         bb.put(l.remainingTime);
         bb.put(l.distanceToLight);
-        bb.put((byte) 0); // ✅ 补 1 字节
-        bb.put((byte) 0); // ✅ 补 1 字节
-        Log.d("PackPosition", "should be 17,after TrafficLight pos = " + bb.position());
+        bb.put(l.speed);
+        bb.put(l.lightCount);
 
         // 4. RouteOverview → 8 字节
         bb.putShort(r.totalDistance);
-        Log.d("PackPosition", "after totalDistance pos = " + bb.position()); // 应该 <= 31
         bb.put(r.tollDistancePct);
         bb.put(r.congestionFlags);
         bb.putShort(r.estimatedTime);
-        bb.putShort(r.totalFee); // ✅ 已经是 8 字节，无需补
+        bb.putShort(r.totalFee); //
 
         // 5. CANWeather → 8 字节
         byte b0 = (byte) ((w.routeHash & 0x7F) | ((w.dataValid & 0x01) << 7));
-        Log.d("PackPosition", "after weather header pos = " + bb.position()); // 应该 <= 29
-        byte b1 = (byte) ((w.weatherCode & 0x0F) | ((w.temperature & 0x0F) << 4));
+        byte b1 = (byte) ((w.weatherCode & 0x0F) | ((w.tempConfidence & 0x0F) << 4));
         byte b2 = (byte) ((w.precipLevel & 0x07) | ((w.warnType & 0x07) << 3) | ((w.warnLevel & 0x03) << 6));
-        bb.put(b0).put(b1).put(b2).put(w.reserved).putShort(w.totalDistance).putShort(w.keyPoints);
+        bb.put(b0).put(b1).put(b2).put(w.realTemperature).putShort(w.totalDistance).putShort(w.keyPoints);
 
         byte[] buf = bb.array();
         StringBuilder sb = new StringBuilder();
         for (byte b : buf) sb.append(String.format("%02X ", b));
-        Log.d("PackPosition", "33 B hex = " + sb.toString().trim());
 
         Log.d("PackPosition", "payload len = " + bb.position()); // 看写到了多少字节
 
         return buf;
-
-//        /* 1. TrafficEvent  7 字节  (BBHBBB) */
-//        bb.put(e.eventCount)               // 0
-//                .put(e.eventSummary)             // 1
-//                .putShort(e.nearestDistance)     // 2-3
-//                .put(e.nearestType)              // 4
-//                .put(e.nearestDelay)             // 5
-//                .put(e.severeCount)              // 6
-//                .put(e.accidentCount);           // 7 ← 共 7 字节
-//
-//        /* 2. TrafficLight  7 字节  (BBHBBB) */
-//        bb.put(l.nextLightId)              // 8
-//                .put(l.stateFlags)               // 9
-//                .putShort(l.positionIndex)       // 10-11
-//                .put(l.remainingTime)            // 12
-//                .put(l.distanceToLight)          // 13
-//                .put(l.reserved1)                // 14
-//                .put(l.reserved2);               // 15 ← 共 7 字节
-//
-//        /* 3. RouteOverview 10 字节 (HHBBHH) */
-//        bb.putShort(r.totalDistance)       // 16-17
-//                .put(r.tollDistancePct)          // 18
-//                .put(r.congestionFlags)          // 19
-//                .putShort(r.estimatedTime)       // 20-21  ← 15 的小端 short
-//                .putShort(r.totalFee);           // 22-23 ← 共 10 字节
-//
-//        /* CAN_Weather 8 B */
-//        byte b0 = (byte) ((w.routeHash & 0x7F) | ((w.dataValid & 0x01) << 7));
-//        byte b1 = (byte) ((w.weatherCode & 0x0F) | ((w.temperature & 0x0F) << 4));
-//        byte b2 = (byte) ((w.precipLevel & 0x07) | ((w.warnType & 0x07) << 3) | ((w.warnLevel & 0x03) << 6));
-//        bb.put(b0).put(b1).put(b2).put(w.reserved).putShort(w.totalDistance).putShort(w.keyPoints);
-//
-//
-//        /* 4. 打印 hex & 校验 */
-//        bb.rewind();
-//        short check = bb.getShort(20);     // 读 20-21 字节
-//        Log.d("Pack", "estimatedTime @20-21 = " + check);
-//
-//        byte[] buf = bb.array();
-//        StringBuilder sb = new StringBuilder();
-//        for (byte b : buf) sb.append(String.format("%02X ", b));
-//        Log.d("Pack", "32 B hex = " + sb.toString().trim());
-//
-//        return buf;
     }
 
     private void sendNavStructs() {
-//        if (ws == null || !mNavigating || currentRoute == null) return;
         if (ws == null || !mNavigating || currentRoute == null) return;
         try {
             TrafficEvent  ev = buildTrafficEvent();
             TrafficLight  tl = buildTrafficLight();
             RouteOverview ro = buildRouteOverview();
-            CANWeather    cw = buildCANWeather();
+            CANWeather cw = buildCANWeather(lastTemp, lastDesc);
             byte[] payload = packAll(ev, tl, ro, cw);
             ws.send(ByteString.of(payload)); // 发送二进制
             // 调试刷新
@@ -1059,32 +982,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         return (v instanceof Number) ? ((Number) v).longValue() : def;
     }
 
-//    private void updateDebugPanel(byte[] buf,
-//                                  TrafficEvent e,
-//                                  TrafficLight l,
-//                                  RouteOverview r,
-//                                  CANWeather w) {
-//        runOnUiThread(() -> {
-//            // 16 进制
-//            StringBuilder sb = new StringBuilder();
-//            for (byte b : buf) sb.append(String.format("%02X ", b & 0xFF));
-//            debugHex.setText(sb.toString().trim());
-//
-//            // 关键字段
-//            String fields = String.format(
-//                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元",
-//                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
-//                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
-//                    r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF,
-//                    r.totalFee / 10.0);
-//            debugFields.setText(fields);
-//
-//            // 第一次收到数据时自动展开
-//            if (debugPanel.getVisibility() == View.GONE) {
-//                debugPanel.setVisibility(View.VISIBLE);
-//            }
-//        });
-//    }
     /* ================= 调试面板（含天气） ================= */
     private void updateDebugPanel(byte[] buf,
                               TrafficEvent e,
@@ -1096,14 +993,25 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             for (byte b : buf) sb.append(String.format("%02X ", b & 0xFF));
             debugHex.setText(sb.toString().trim());
 
+//            String fields = String.format(
+//                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +
+//                            "天气码=%d 置信=%d 实时温度=%d℃ 降水=%d 预警=%d-%d",
+//                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
+//                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
+//                    r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF, r.totalFee / 10.0,
+//                    w.weatherCode & 0xF, w.tempConfidence & 0xF, (w.realTemperature & 0xFF) - 40,
+//                    w.precipLevel & 0x7, w.warnType & 0x7, w.warnLevel & 0x3);
+
             String fields = String.format(
-                "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +
-                        "天气码=%d 温度=%d 降水=%d 预警=%d-%d",
-                e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
-                l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
-                r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF, r.totalFee / 10.0,
-                w.weatherCode & 0xF, w.temperature & 0xF, w.precipLevel & 0x7,
-                w.warnType & 0x7, w.warnLevel & 0x3); // ===== MOD =====
+                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +
+                            "天气码=%d 置信=%d 实时温度=%d℃ 降水=%d 预警=%d-%d | 车速=%dkm/h 灯总数=%d",
+                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
+                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
+                    r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF, r.totalFee / 10.0,
+                    w.weatherCode & 0xF, w.tempConfidence & 0xF, (w.realTemperature & 0xFF) - 40,
+                    w.precipLevel & 0x7, w.warnType & 0x7, w.warnLevel & 0x3,
+                    l.speed & 0xFF, l.lightCount & 0xFF);
+
             debugFields.setText(fields);
             if (debugPanel.getVisibility() == View.GONE) debugPanel.setVisibility(View.VISIBLE);
         });
