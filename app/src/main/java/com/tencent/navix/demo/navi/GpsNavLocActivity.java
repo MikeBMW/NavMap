@@ -4,7 +4,10 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -32,6 +35,7 @@ import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
 import com.tencent.map.geolocation.TencentLocationRequest;
+import com.tencent.navix.api.location.LocationApi;
 import com.tencent.navix.api.model.NavDriveRoute;
 import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.model.NavSearchPoint;
@@ -42,11 +46,14 @@ import com.tencent.navix.demo.MainActivity;
 import com.tencent.navix.demo.R;
 import com.tencent.navix.demo.utils.TencentGeoCoder;
 import com.tencent.navix.demo.utils.TencentWeather;
+import com.tencent.tencentmap.mapsdk.maps.model.LatLng;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 //import com.tencent.map.search.SearchManager;
 //import com.tencent.map.search.param.SearchParam;
@@ -58,8 +65,7 @@ import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
 
 import okio.ByteString;
 
@@ -92,10 +98,12 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     private Button btnConfirmDestination;
     private TextView tvLocationInfo;
     private EditText etIpPort;
+
     /* ================= debug UI ================= */
     private View debugPanel;
     private TextView debugTitle, debugHex, debugFields;
     private boolean debugCollapsed = false;
+
     /* ================= weather UI ================= */
     private TextView tvTemp, tvDesc;
     private ImageView ivWeather;
@@ -281,6 +289,10 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                         new NavSearchPoint(currentLocation.getLatitude(), currentLocation.getLongitude()),
                         new NavSearchPoint(lat, lng)
                 );
+
+                // ⭐ 关键修复：导航启动后重新注册定位监听
+                reRegisterLocationListenerAfterNavigation();
+
             }
 
             @Override
@@ -289,6 +301,37 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             }
         });
     }
+
+    /**
+     * 导航启动后重新注册腾讯定位监听
+     */
+    private void reRegisterLocationListenerAfterNavigation() {
+        // 使用带 Looper 参数的 Handler 构造函数
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                if (locationManager != null) {
+                    // 重新注册腾讯定位监听 - 修复：使用 GpsNavLocActivity.this
+                    int result = locationManager.requestLocationUpdates(locationRequest, GpsNavLocActivity.this, 0);
+
+                    if (result == 0) {
+                        Log.d("NavDebug", "✅ 导航启动后重新注册腾讯定位监听 - 成功");
+
+                        // 获取最后已知位置（腾讯定位SDK的方式）
+                        TencentLocation lastLocation = locationManager.getLastKnownLocation();
+                        if (lastLocation != null) {
+                            Log.d("NavDebug", "📌 重新注册后获取的腾讯位置: " +
+                                    lastLocation.getLatitude() + ", " + lastLocation.getLongitude());
+                        }
+                    } else {
+                        Log.e("NavDebug", "❌ 重新注册腾讯定位失败，错误码: " + result);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("NavDebug", "❌ 重新注册腾讯定位异常: " + e.getMessage());
+            }
+        }, 1000); // 延迟1秒，确保导航SDK完全初始化
+    }
+
 
     private void parseDestination(String address, OnDestinationParsedListener listener) {
         TencentGeoCoder.geoCode(this, address, new TencentGeoCoder.GeoListener() {
@@ -342,6 +385,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                     if (navRoutePlan != null) {
                         List<NavDriveRoute> routePlanList = navRoutePlan.getRouteDatas();
                         if (routePlanList != null && routePlanList.size() > 0) {
+                            stopCurrentNavigation(); // 停止当前导航
                             navigatorDrive.startNavigation(routePlanList.get(0).getRouteId());
 
                             currentRoute = routePlanList.get(0);
@@ -353,6 +397,16 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                     }
                 }
         );
+    }
+
+    /**
+     * 停止当前导航
+     */
+    private void stopCurrentNavigation() {
+        if (navigatorDrive != null && mNavigating) {
+            navigatorDrive.stopNavigation();
+            mNavigating = false;
+        }
     }
 
     /**
@@ -414,6 +468,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                         List<NavDriveRoute> routePlanList = navRoutePlan.getRouteDatas();
                         if (routePlanList != null && routePlanList.size() > 0) {
                             // 开启导航
+                            stopCurrentNavigation(); // 停止当前导航
                             navigatorDrive.startNavigation(routePlanList.get(0).getRouteId());
                         } else {
                             showToast("未获取到有效路线");
@@ -422,6 +477,8 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                 }
         );
     }
+
+
 
     /**
      * 定位回调，获取到新的定位信息时会调用
@@ -436,11 +493,83 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         // 空实现（如果不需要处理GNSS信息）
         // 若需要处理，可根据官方文档解析gnssInfo对象（可能是GNSS状态、卫星数量等信息）
     }
+
+    private boolean isOffRoute(TencentLocation newLocation) {
+        if (currentRoute == null || newLocation == null) {
+            return false; // 如果没有当前路线或新位置，直接返回false
+        }
+
+        // 获取路线的路径点集合
+        List<LatLng> routePoints = currentRoute.getRoutePoints(); // 假设 getRoutePoints() 返回的是 List<LatLng>
+        if (routePoints == null || routePoints.isEmpty()) {
+            return false; // 如果路线点集合为空，直接返回false
+        }
+
+        // 初始化偏离标志和最小距离
+        boolean isOff = true;
+        double minDistance = Double.MAX_VALUE;
+
+        // 遍历路线上的每个点，计算与新位置的最短距离
+        for (LatLng routePoint : routePoints) {
+            double distance = haversineDistance(newLocation.getLatitude(), newLocation.getLongitude(), routePoint.latitude, routePoint.longitude);
+            if (distance < minDistance) {
+                minDistance = distance;
+                isOff = false; // 如果找到更近的点，则设置偏离标志为false
+            }
+        }
+
+        // 检查最小距离是否超过偏离阈值
+        final double OFFSET_DISTANCE = 50.0; // 假设偏离阈值为50米
+        return minDistance > OFFSET_DISTANCE;
+    }
+
+    /**
+     * 使用haversine公式计算两点之间的距离
+     */
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000; // 地球半径，单位：米
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+        double deltaLat = Math.toRadians(lat2 - lat1);
+        double deltaLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                Math.cos(radLat1) * Math.cos(radLat2) *
+                        Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+
+    private void checkAndReplanRouteIfNecessary(TencentLocation newLocation) {
+        String destination = etDestination.getText().toString().trim();
+        if (isOffRoute(newLocation)) {
+            parseDestination(destination, new OnDestinationParsedListener() {
+                @Override
+                public void onParsed(double lat, double lng) {
+                    startNavigation(
+                            new NavSearchPoint(currentLocation.getLatitude(), currentLocation.getLongitude()),
+                            new NavSearchPoint(lat, lng)
+                    );
+                }
+
+                @Override
+                public void onError(String error) {
+                    showToast("解析目的地失败：" + error);
+                }
+            });
+        }
+    }
+
+
     @Override
     public void onLocationChanged(TencentLocation location, int errorCode, String errorMsg) {
         Log.d("NavDebug", "定位回调：errorCode=" + errorCode + ", errorMsg=" + errorMsg); // 新增
         if (errorCode == 0) {
             currentLocation = location; // 保存最新定位信息
+
+            // ⭐ 关键修复：将定位数据传递给导航SDK
+//            updateLocationToNavigationSDK(location);
 
             /* 1. 计算实时车速（m/s） */
             double speedMps = calcSpeedFromLocation(
@@ -453,6 +582,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             if (tvLocationInfo != null) {
                 tvLocationInfo.setText(locationInfo);
             }
+
 
             // 如果之前没算路成功，这里可以再次尝试算路（比如第一次定位完成后自动算路）
             if (currentRoute == null) {
@@ -493,6 +623,9 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                             Log.e("weather", "获取天气失败: " + msg);
                         }
                     });
+
+            // 判断是否偏离路线并重新规划路线
+            checkAndReplanRouteIfNecessary(location);
 
         } else {
             // 定位出错，处理错误情况，比如弹 Toast 提示
@@ -950,7 +1083,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     }
 
 
-    // ⚠️修改 3：页面销毁时统一清理
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -993,14 +1126,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             for (byte b : buf) sb.append(String.format("%02X ", b & 0xFF));
             debugHex.setText(sb.toString().trim());
 
-//            String fields = String.format(
-//                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +
-//                            "天气码=%d 置信=%d 实时温度=%d℃ 降水=%d 预警=%d-%d",
-//                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
-//                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
-//                    r.totalDistance / 1000.0, r.estimatedTime & 0xFFFF, r.totalFee / 10.0,
-//                    w.weatherCode & 0xF, w.tempConfidence & 0xF, (w.realTemperature & 0xFF) - 40,
-//                    w.precipLevel & 0x7, w.warnType & 0x7, w.warnLevel & 0x3);
 
             String fields = String.format(
                     "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +

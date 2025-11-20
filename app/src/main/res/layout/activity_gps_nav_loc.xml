@@ -121,15 +121,6 @@
         android:background="#EE000000"
         android:visibility="gone">
 
-        <!-- 标题栏：点一下折叠/展开 -->
-<!--        <TextView-->
-<!--            android:id="@+id/debug_title"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="调试信息（点我折叠）"-->
-<!--            android:textColor="#FFF"-->
-<!--            android:textStyle="bold"-->
-<!--            android:padding="0dp" />-->
 
         <TextView
             android:id="@+id/debug_title"
@@ -165,27 +156,6 @@
             android:padding="2dp" />
     </LinearLayout>
 
-<!--    <LinearLayout-->
-<!--        android:id="@+id/weather_bar"-->
-<!--        android:orientation="horizontal"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:gravity="center_vertical"-->
-<!--        android:padding="8dp"-->
-<!--        android:background="#55000000">-->
-<!--        <TextView-->
-<!--            android:id="@+id/tv_temp"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:textColor="@android:color/white"-->
-<!--            android:layout_marginStart="8dp" />-->
-<!--        <TextView-->
-<!--            android:id="@+id/tv_desc"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:textColor="@android:color/white"-->
-<!--            android:layout_marginStart="8dp" />-->
-<!--    </LinearLayout>-->
 </RelativeLayout>
 
 
