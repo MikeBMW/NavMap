@@ -8,7 +8,7 @@ android {
     compileSdk versions.targetSdk
 
     defaultConfig {
-        applicationId "com.tencent.navix.demo"
+        applicationId "com.tencent.navix"
         minSdk versions.minSdk
         targetSdk versions.targetSdk
         versionCode 1
@@ -64,6 +64,9 @@ dependencies {
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 
     implementation 'androidx.annotation:annotation:1.8.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.3.0"
+
+
 
 }
 

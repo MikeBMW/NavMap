@@ -1,4 +1,4 @@
-package com.tencent.navix.demo.utils;
+package com.tencent.navix.utils;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -7,9 +7,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
+//import androidx.annotation.NonNull;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -56,12 +55,16 @@ public class TencentGeoCoder {
             Request req = new Request.Builder().url(url).build();
             CLIENT.newCall(req).enqueue(new Callback() {
                 @Override
-                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                public void onFailure(Call call, IOException e) {
+                    if (call == null || e == null) return; // 保底判断
                     MAIN.post(() -> listener.onError("网络错误：" + e.getMessage()));
                 }
 
+
+
                 @Override
-                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (call == null || response == null) return; // 保底判断
                     if (!response.isSuccessful()) {
                         MAIN.post(() -> listener.onError("http code=" + response.code()));
                         return;

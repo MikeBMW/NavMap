@@ -1,13 +1,10 @@
-package com.tencent.navix.demo.navi;
-
-import static com.tencent.navix.api.config.SimulatorConfig.Type.SIMULATE_LOCATIONS_ALONG_ROUTE;
-
-import androidx.appcompat.app.AppCompatActivity;
+package com.tencent.navix.navi;
 
 import android.os.Bundle;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.tencent.navix.api.NavigatorZygote;
-import com.tencent.navix.api.config.SimulatorConfig;
 import com.tencent.navix.api.layer.NavigatorLayerRootWalk;
 import com.tencent.navix.api.layer.NavigatorViewStub;
 import com.tencent.navix.api.model.NavError;
@@ -20,13 +17,13 @@ import com.tencent.navix.api.observer.SimpleNavigatorWalkObserver;
 import com.tencent.navix.api.plan.RoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
 import com.tencent.navix.api.tts.NavigatorTTSPlayer;
-import com.tencent.navix.demo.R;
+import com.tencent.navix.R;
 import com.tencent.navix.tts.api.TTSPlayer;
 import com.tencent.navix.ui.NavigatorLayerViewWalk;
 
 import java.util.List;
 
-public class WalkSimNavActivity extends AppCompatActivity {
+public class WalkGpsNavActivity extends AppCompatActivity {
 
     private NavigatorWalk navigatorWalk;
     private NavigatorLayerRootWalk layerRootWalk;
@@ -54,7 +51,7 @@ public class WalkSimNavActivity extends AppCompatActivity {
             public void onResultCallback(NavRoutePlan<NavNonMotorRoute> navRoutePlan, NavError navError) {
                 List<NavNonMotorRoute> routeDatas = navRoutePlan.getRouteDatas();
                 String routeId = routeDatas.get(0).getRouteId();
-                navigatorWalk.simulator().setEnable(true).setConfig(SimulatorConfig.builder(SIMULATE_LOCATIONS_ALONG_ROUTE).setSimulateSpeed(6).build());
+                navigatorWalk.simulator().setEnable(false);
                 navigatorWalk.startNavigation(routeId);
             }
         });

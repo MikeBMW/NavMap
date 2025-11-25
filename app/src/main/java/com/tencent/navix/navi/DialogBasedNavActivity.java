@@ -1,15 +1,13 @@
-package com.tencent.navix.demo.navi;
+package com.tencent.navix.navi;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-import androidx.annotation.Nullable;
+//import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,16 +16,17 @@ import com.tencent.navix.api.config.SimulatorConfig;
 import com.tencent.navix.api.layer.NavigatorLayerRootDrive;
 import com.tencent.navix.api.layer.NavigatorViewStub;
 import com.tencent.navix.api.model.NavDriveRoute;
-import com.tencent.navix.api.model.NavMode;
 import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.model.NavSearchPoint;
 import com.tencent.navix.api.navigator.NavigatorDrive;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
-import com.tencent.navix.demo.R;
+import com.tencent.navix.R;
 import com.tencent.navix.tts.DefaultTTSPlayer;
 import com.tencent.navix.ui.NavigatorLayerViewDrive;
 import com.tencent.navix.ui.api.config.UIComponentConfig;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 

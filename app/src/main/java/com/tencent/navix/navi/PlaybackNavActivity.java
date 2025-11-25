@@ -1,25 +1,27 @@
-package com.tencent.navix.demo.navi;
+package com.tencent.navix.navi;
 
 import android.os.Bundle;
 
-import androidx.annotation.Nullable;
+//import androidx.annotation.Nullable;
 
-import com.tencent.gaya.framework.tools.FileUtil;
 import com.tencent.navix.api.config.SimulatorConfig;
 import com.tencent.navix.api.model.NavDriveRoute;
 import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.model.NavSearchPoint;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
-import com.tencent.navix.demo.BaseNavActivity;
-import com.tencent.navix.tts.DefaultTTSPlayer;
+import com.tencent.navix.BaseNavActivity;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
-import kotlin.io.ByteStreamsKt;
-import kotlin.io.FilesKt;
+//import kotlin.io.ByteStreamsKt;
+//import kotlin.io.FilesKt;
 
 public class PlaybackNavActivity extends BaseNavActivity {
 
@@ -58,10 +60,24 @@ public class PlaybackNavActivity extends BaseNavActivity {
         );
     }
 
+//    private File playbackFilePrepare() {
+//        File playback = new File(getFilesDir(), "playback.gps");
+//        try {
+//            FileUtil.write(playback, ByteStreamsKt.readBytes(getResources().getAssets().open("case001.gps")));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return playback;
+//    }
     private File playbackFilePrepare() {
         File playback = new File(getFilesDir(), "playback.gps");
-        try {
-            FileUtil.write(playback, ByteStreamsKt.readBytes(getResources().getAssets().open("case001.gps")));
+        try (InputStream inputStream = getResources().getAssets().open("case001.gps");
+             FileOutputStream fileOutputStream = new FileOutputStream(playback)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

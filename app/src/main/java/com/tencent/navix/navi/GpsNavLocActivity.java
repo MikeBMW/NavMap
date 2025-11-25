@@ -1,9 +1,8 @@
-package com.tencent.navix.demo.navi;
+package com.tencent.navix.navi;
 
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,7 +10,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
-
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -20,15 +18,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-//import androidx.annotation.Nullable;
-//import androidx.camera.core.CameraSelector;
-//import androidx.camera.core.Preview;
-//import androidx.camera.lifecycle.ProcessCameraProvider;
-//import androidx.camera.view.PreviewView;
-
-//import com.google.common.util.concurrent.ListenableFuture;
-//import com.google.firebase.database.tubesock.WebSocket;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.tencent.map.geolocation.TencentLocation;
@@ -36,41 +25,45 @@ import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
 import com.tencent.map.geolocation.TencentLocationRequest;
 import com.tencent.navix.api.location.LocationApi;
+import com.tencent.navix.BaseNavActivity;
+import com.tencent.navix.MainActivity;
+import com.tencent.navix.R;
+import com.tencent.navix.api.model.NavDriveDataInfoEx;
 import com.tencent.navix.api.model.NavDriveRoute;
+import com.tencent.navix.api.model.NavDriveRouteData;
 import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.model.NavSearchPoint;
+import com.tencent.navix.api.navigator.NavigatorDrive;
+import com.tencent.navix.api.observer.NavigatorDriveObserver;
+import com.tencent.navix.api.observer.SimpleNavigatorDriveObserver;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
-import com.tencent.navix.demo.BaseNavActivity;
-import com.tencent.navix.demo.MainActivity;
-import com.tencent.navix.demo.R;
-import com.tencent.navix.demo.utils.TencentGeoCoder;
-import com.tencent.navix.demo.utils.TencentWeather;
+import com.tencent.navix.utils.TencentGeoCoder;
+import com.tencent.navix.utils.TencentWeather;
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-//import com.tencent.map.search.SearchManager;
-//import com.tencent.map.search.param.SearchParam;
-//import com.tencent.map.search.result.PoiResult;
-
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
-
-
-
 import okio.ByteString;
 
 
 public class GpsNavLocActivity extends BaseNavActivity implements TencentLocationListener {
+
+    private static final String TAG = "NavDebug";
+
+
+
+//    private NavigatorDrive navigatorDrive;  // 建议显式声明  不能加，一加上就重复进入主菜单
 
     /* ================= 导航/发送线程 ================= */
     private volatile boolean mNavigating = false;   // 是否正在导航
@@ -113,6 +106,20 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     private OkHttpClient client = new OkHttpClient.Builder()
             .pingInterval(20, TimeUnit.SECONDS)   // 心跳
             .build();
+
+    private final NavigatorDriveObserver driveObserver =
+            new SimpleNavigatorDriveObserver() {
+                @Override
+                public void onMainRouteDidChange(String newRouteId, int reason) {
+                    // SDK 官方保证，这里一定能拿到最新主路线
+                    if (navigatorDrive != null) {
+                        NavDriveDataInfoEx info = navigatorDrive.getNavRouteDataInfo();
+                        if (info != null) {
+                            currentRoute = info.getMainRoute();
+                        }
+                    }
+                }
+            };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,7 +165,10 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             debugTitle.setText(debugCollapsed ? "调试信息（点我展开）" : "调试信息（点我折叠）");
         });
 
+        // 注册导航回调
 
+
+        Log.d(TAG, "GpsNavLocActivity onCreate: 注册导航 observer 完成");
     }
 
     public static class CANWeather {
@@ -388,6 +398,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                             stopCurrentNavigation(); // 停止当前导航
                             navigatorDrive.startNavigation(routePlanList.get(0).getRouteId());
 
+                            // ❌ 不需要了：
                             currentRoute = routePlanList.get(0);
                             startSendThread();
 
@@ -478,8 +489,6 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         );
     }
 
-
-
     /**
      * 定位回调，获取到新的定位信息时会调用
      */
@@ -490,6 +499,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
 
     @Override
     public void onGnssInfoChanged(Object gnssInfo) {
+        //TODO
         // 空实现（如果不需要处理GNSS信息）
         // 若需要处理，可根据官方文档解析gnssInfo对象（可能是GNSS状态、卫星数量等信息）
     }
@@ -561,6 +571,25 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         }
     }
 
+    private void NOcheckAndReplanRouteIfNecessary(TencentLocation newLocation) {
+        String destination = etDestination.getText().toString().trim();
+//        if (isOffRoute(newLocation)) {
+            parseDestination(destination, new OnDestinationParsedListener() {
+                @Override
+                public void onParsed(double lat, double lng) {
+                    startNavigation(
+                            new NavSearchPoint(currentLocation.getLatitude(), currentLocation.getLongitude()),
+                            new NavSearchPoint(lat, lng)
+                    );
+                }
+
+                @Override
+                public void onError(String error) {
+                    showToast("解析目的地失败：" + error);
+                }
+            });
+//        }
+    }
 
     @Override
     public void onLocationChanged(TencentLocation location, int errorCode, String errorMsg) {
@@ -568,8 +597,29 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         if (errorCode == 0) {
             currentLocation = location; // 保存最新定位信息
 
-            // ⭐ 关键修复：将定位数据传递给导航SDK
-//            updateLocationToNavigationSDK(location);
+            // 一定要加这一段，防止导航未开始导致 info 为 null
+            if (navigatorDrive == null) {
+                return;
+            }
+            if (navigatorDrive != null) {
+                NavDriveDataInfoEx info = navigatorDrive.getNavRouteDataInfo();
+                if (info == null) {
+                    // 说明还没有 startNavigation() 或导航引擎尚未初始化完成
+                    Log.d("NavDebug", "导航尚未初始化完成，NavRouteDataInfo 为空");
+                    return;
+                }
+                int passeddistance = info.getPassedDistance();
+                int distance = info.getMainRoute().getDistance();
+                int leftDistance = info.getMainRoute().getDistance() - info.getPassedDistance();
+                int speed = info.getSpeedKMH();
+                int passedtime = info.passedTime;
+                int time = info.getMainRoute().getTime();
+                int passedseconds = time * 60 - info.getPassedTime();
+                int leftminutes = (int)passedseconds/60 ;
+                currentRoute = info.getMainRoute();
+                currentRoute.distance = leftDistance;
+                currentRoute.time = leftminutes;
+            }
 
             /* 1. 计算实时车速（m/s） */
             double speedMps = calcSpeedFromLocation(
@@ -626,12 +676,40 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
 
             // 判断是否偏离路线并重新规划路线
             checkAndReplanRouteIfNecessary(location);
+//            NOcheckAndReplanRouteIfNecessary(location);
 
         } else {
             // 定位出错，处理错误情况，比如弹 Toast 提示
             showToast("定位失败：" + errorMsg);
             Log.e("NavDebug", "定位失败：errorCode=" + errorCode + ", errorMsg=" + errorMsg); // 新增
         }
+    }
+
+    private void updateCurrentRouteInfo(TencentLocation location) {
+        if (currentRoute == null || location == null) {
+            return;
+        }
+
+        // 获取路线的路径点集合
+        List<LatLng> routePoints = currentRoute.getRoutePoints();
+        if (routePoints == null || routePoints.isEmpty()) {
+            return;
+        }
+
+        // 初始化到达目的地的距离
+        double distanceToDestination = Double.MAX_VALUE;
+
+        // 遍历路线上的每个点，计算与新位置的最短距离
+        for (LatLng routePoint : routePoints) {
+            double distance = haversineDistance(location.getLatitude(), location.getLongitude(), routePoint.latitude, routePoint.longitude);
+            if (distance < distanceToDestination) {
+                distanceToDestination = distance;
+            }
+        }
+        // 更新到达目的地的距离
+//        currentRoute.distance = (int) distanceToDestination;
+//        currentRoute.distance = 1234;  //  5023是 5km
+
     }
 
     /**
@@ -758,9 +836,14 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                     int passTime = toInt(ReflectUtil.getField(item, "passTime"), 0); // 历史均速通过时间
                     int navSpeed = toInt(ReflectUtil.getField(item, "speed"), 0);    // km/h
 
+                    // 获取实时车速，优先使用实时车速
+                    NavDriveDataInfoEx info = navigatorDrive.getNavRouteDataInfo();
+                    int realSpeed = info != null ? info.getSpeedKMH() : navSpeed;  // 使用实时车速（如果 info 不为空）
+                    if (realSpeed < 1) realSpeed = 1;  // 保底：未知或 0 时给 10 km/h
+                    float navSpeedMps = realSpeed / 3.6f;  // 转换为 m/s
                     // 保底：未知或 0 时给 10 km/h
                     if (navSpeed < 1) navSpeed = 1;
-                    float navSpeedMps = navSpeed / 3.6f;
+                        navSpeedMps = navSpeed / 3.6f;
 
                     /* 2. 事件等级映射 */
                     int level = 0;
@@ -813,9 +896,17 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     }
 
     private TrafficLight buildTrafficLight() {
+        int speedMain = 0;
         TrafficLight l = new TrafficLight();
         NavDriveRoute route = currentRoute;
         if (route == null) return l;
+
+        if (navigatorDrive != null) {
+            NavDriveDataInfoEx info = navigatorDrive.getNavRouteDataInfo();
+            if (info != null) {
+                speedMain = info.getSpeedKMH();
+            }
+        }
 
         try {
             List<?> lights = (List<?>) ReflectUtil.getField(route, "trafficLights");
@@ -847,6 +938,26 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             double dist = haversine(carLat, carLon, lightLat, lightLon);
             int eta = (int) (dist / speedMps);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             /* 4. 灯态 & 剩余秒数（规则可再调） */
             int state, remaining;
             if (speedKph > 30) {          // 绿灯
@@ -857,7 +968,8 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                 remaining = 25 + (eta % 21);   // 25~45 s
             }
 
-            int speedKphInt = Math.min(255, Math.max(0, (int) speedKph)); // 0-255
+//            int speedKphInt = Math.min(255, Math.max(0, (int) speedKph)); // 0-255
+            int speedKphInt = Math.min(255, Math.max(0, (int) speedMain)); // 0-255
             int lightCount = toInt(ReflectUtil.getField(route, "trafficLightCount"), 0);
 
             /* 5. 打包 */
@@ -874,6 +986,46 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
         }
         return l;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private static double haversine(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371000;                 // 地球半径 m
@@ -1030,14 +1182,19 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
     }
 
     private void sendNavStructs() {
-        if (ws == null || !mNavigating || currentRoute == null) return;
+//        if (ws == null || !mNavigating || currentRoute == null) return;
+        if (!mNavigating || currentRoute == null) return;
         try {
             TrafficEvent  ev = buildTrafficEvent();
             TrafficLight  tl = buildTrafficLight();
             RouteOverview ro = buildRouteOverview();
             CANWeather cw = buildCANWeather(lastTemp, lastDesc);
             byte[] payload = packAll(ev, tl, ro, cw);
-            ws.send(ByteString.of(payload)); // 发送二进制
+//            ws.send(ByteString.of(payload)); // 发送二进制
+            // 只在WebSocket不为空时发送
+            if (ws != null) {
+                ws.send(ByteString.of(payload)); // 发送二进制
+            }
             // 调试刷新
             updateDebugPanel(payload, ev, tl, ro, cw);
         } catch (Throwable t) {
@@ -1065,12 +1222,17 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             if (mNavigating) return;
             mNavigating = true;
             mSendThread = new Thread(() -> {
+
                 while (mNavigating && !Thread.currentThread().isInterrupted()) {
                     try {
                         Thread.sleep(2000);
                         // 以前：runOnUiThread(this::sendNavStructs);
                         // 现在：后台线程直接发送，不上主线程
                         sendNavStructs();
+
+
+
+
                     } catch (InterruptedException ignore) {
                         break;
                     } catch (Throwable t) {
@@ -1127,7 +1289,7 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
             debugHex.setText(sb.toString().trim());
 
 
-            String fields = String.format(
+            String fields = String.format(Locale.CHINA,
                     "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%.1fkm 时长=%dmin 费用=%.1f元\n" +
                             "天气码=%d 置信=%d 实时温度=%d℃ 降水=%d 预警=%d-%d | 车速=%dkm/h 灯总数=%d",
                     e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
@@ -1136,6 +1298,16 @@ public class GpsNavLocActivity extends BaseNavActivity implements TencentLocatio
                     w.weatherCode & 0xF, w.tempConfidence & 0xF, (w.realTemperature & 0xFF) - 40,
                     w.precipLevel & 0x7, w.warnType & 0x7, w.warnLevel & 0x3,
                     l.speed & 0xFF, l.lightCount & 0xFF);
+
+//            String fields = String.format(
+//                    "事件=%d 严重=%d 事故=%d | 灯距=%dm 剩余=%ds | 总距=%dm 时长=%dmin 费用=%.1f元\n" +
+//                            "天气码=%d 置信=%d 实时温度=%d℃ 降水=%d 预警=%d-%d | 车速=%dkm/h 灯总数=%d",
+//                    e.eventCount & 0xFF, e.severeCount & 0xFF, e.accidentCount & 0xFF,
+//                    l.distanceToLight & 0xFF, l.remainingTime & 0xFF,
+//                    r.totalDistance , r.estimatedTime & 0xFFFF, r.totalFee / 10.0,
+//                    w.weatherCode & 0xF, w.tempConfidence & 0xF, (w.realTemperature & 0xFF) - 40,
+//                    w.precipLevel & 0x7, w.warnType & 0x7, w.warnLevel & 0x3,
+//                    l.speed & 0xFF, l.lightCount & 0xFF);
 
             debugFields.setText(fields);
             if (debugPanel.getVisibility() == View.GONE) debugPanel.setVisibility(View.VISIBLE);

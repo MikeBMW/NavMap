@@ -1,11 +1,11 @@
-package com.tencent.navix.demo.navi;
+package com.tencent.navix.navi;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.TypedValue;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+//import androidx.annotation.NonNull;
+//import androidx.annotation.Nullable;
 
 import com.tencent.navix.api.config.SimulatorConfig;
 import com.tencent.navix.api.model.NavDriveRoute;
@@ -16,18 +16,21 @@ import com.tencent.navix.api.observer.SimpleNavigatorDriveObserver;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
 import com.tencent.navix.core.NavigatorContext;
-import com.tencent.navix.demo.BaseNavActivity;
-import com.tencent.navix.demo.view.CustomNavView;
+import com.tencent.navix.BaseNavActivity;
 import com.tencent.navix.tts.DefaultTTSPlayer;
 import com.tencent.navix.ui.api.config.EnlargedMapUIConfig;
 import com.tencent.navix.ui.api.config.NavMapVisionConfig;
 import com.tencent.navix.ui.api.config.UIComponentConfig;
 
+
+
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 public class LandscapeSimulationNavActivity extends BaseNavActivity {
 
-    private CustomNavView customLayer;
+    private com.tencent.navix.view.CustomNavView customLayer;
 
     private int screenWidth = 0;
 
@@ -63,7 +66,7 @@ public class LandscapeSimulationNavActivity extends BaseNavActivity {
                 .setMargins(DP_10, screenWidth / 4 * 3, DP_10)
                 .build());
 
-        customLayer = new CustomNavView(this);
+        customLayer = new com.tencent.navix.view.CustomNavView(this);
         layerRootDrive.addViewLayer(customLayer);
 
         // 算路并开启模拟导航
@@ -129,7 +132,11 @@ public class LandscapeSimulationNavActivity extends BaseNavActivity {
     }
 
     @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+    public void onConfigurationChanged(Configuration newConfig) {
+        if (newConfig == null) {
+            // 处理 newConfig 为 null 的情况
+            return;
+        }
         super.onConfigurationChanged(newConfig);
         if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
             screenWidth = getResources().getDisplayMetrics().widthPixels;

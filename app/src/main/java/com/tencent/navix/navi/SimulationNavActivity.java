@@ -1,8 +1,8 @@
-package com.tencent.navix.demo.navi;
+package com.tencent.navix.navi;
 
 import android.os.Bundle;
 
-import androidx.annotation.Nullable;
+//import androidx.annotation.Nullable;
 
 import com.tencent.navix.api.config.SimulatorConfig;
 import com.tencent.navix.api.model.NavDriveRoute;
@@ -10,8 +10,12 @@ import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.model.NavSearchPoint;
 import com.tencent.navix.api.plan.DriveRoutePlanRequestCallback;
 import com.tencent.navix.api.plan.RoutePlanRequester;
-import com.tencent.navix.demo.BaseNavActivity;
+import com.tencent.navix.BaseNavActivity;
 import com.tencent.navix.tts.DefaultTTSPlayer;
+
+//import org.jetbrains.annotations.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.tencent.navix.demo">
+    package="com.tencent.navix">
 
     <!-- 通过GPS得到精确位置 -->
     <uses-permission
@@ -21,17 +21,9 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="true"/>
 
-<!--    <uses-permission-->
-<!--        android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
-
-<!--    <uses-permission-->
-<!--        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />-->
-
-<!--    <uses-permission-->
-<!--        android:name="android.permission.READ_PHONE_STATE" />-->
 
     <application
-        android:name=".NavApplication"
+        android:name="com.tencent.navix.NavApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -49,54 +41,37 @@
             android:value="CJZBZ-5EXW4-2UQUY-FSM3S-TUXS3-PWFDF" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.tencent.navix.MainActivity"
             android:exported="true">
             <intent-filter>
                 <category android:name="android.intent.category.LAUNCHER" />
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
-        <activity android:name=".route.RouteRequestActivity" />
-        <activity android:name=".navi.GpsNavActivity" />
-        <activity android:name=".navi.WalkSimNavActivity" />
-        <activity android:name=".navi.WalkGpsNavActivity" />
-        <activity android:name=".navi.RideSimNavActivity" />
-        <activity android:name=".navi.RideGpsNavActivity" />
-        <activity android:name=".navi.SimulationNavActivity" />
-        <activity android:name=".navi.PlaybackNavActivity" />
-        <activity android:name=".navi.CustomViewNavActivity" />
-        <activity android:name=".navi.CustomMarkerNavActivity" />
-        <activity android:name=".navi.CustomLocatorNavActivity" />
-        <activity android:name=".navi.CustomRouteStyleNavActivity" />
-        <activity android:name=".navi.DialogBasedNavActivity" />
-        <activity android:name=".navi.SimulationSliceNavActivity" />
-        <activity android:name=".view.CustomEnlargedMapActivity" />
-        <activity android:name=".route.CustomRouteRequestActivity" />
-        <activity android:name=".route.TruckRouteRequestActivity" />
-        <activity android:name=".route.TruckRoutePlanActivity" />
-        <activity android:name=".navi.LandscapeSimulationNavActivity"
+        <activity android:name="com.tencent.navix.navi.WalkSimNavActivity" />
+        <activity android:name="com.tencent.navix.navi.WalkGpsNavActivity" />
+        <activity android:name="com.tencent.navix.navi.SimulationNavActivity" />
+        <activity android:name="com.tencent.navix.navi.PlaybackNavActivity" />
+        <activity android:name="com.tencent.navix.navi.DialogBasedNavActivity" />
+        <activity android:name="com.tencent.navix.navi.LandscapeSimulationNavActivity"
             android:configChanges="keyboardHidden|screenSize|orientation"
             />
-        <activity android:name=".route.MapActivity" />
         <activity
-            android:name="com.tencent.example.location.DemoMapActivity"
+            android:name="com.tencent.location.DemoMapActivity"
             android:label="我的位置" />
         <activity
-            android:name="com.tencent.navix.demo.navi.GpsNavLocActivity"
+            android:name="com.tencent.navix.navi.GpsNavLocActivity"
             android:label="GpsNavLocActivity"
             android:launchMode="singleTask"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true">
-
-            <!-- 关键：让它成为启动页 -->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
         </activity>
-
-
-
+        <activity
+            android:name="com.tencent.navix.navi.NavUpdateActivity"
+            android:label="NavUpdateActivity"
+            android:launchMode="singleTask"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true">
+        </activity>
     </application>
-
 </manifest>

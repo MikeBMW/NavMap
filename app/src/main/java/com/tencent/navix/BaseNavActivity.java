@@ -1,8 +1,7 @@
-package com.tencent.navix.demo;
+package com.tencent.navix;
 
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
+//import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.tencent.navix.api.NavigatorZygote;
@@ -12,8 +11,11 @@ import com.tencent.navix.api.model.NavRouteReqParam;
 import com.tencent.navix.api.navigator.NavigatorDrive;
 import com.tencent.navix.api.observer.SimpleNavigatorDriveObserver;
 import com.tencent.navix.api.tts.NavigatorTTSPlayer;
+import com.tencent.navix.R;
 import com.tencent.navix.tts.api.TTSPlayer;
 import com.tencent.navix.ui.NavigatorLayerViewDrive;
+
+import org.jetbrains.annotations.Nullable;
 
 
 public abstract class BaseNavActivity extends AppCompatActivity {
@@ -24,6 +26,7 @@ public abstract class BaseNavActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_nav);

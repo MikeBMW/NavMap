@@ -1,4 +1,4 @@
-package com.tencent.navix.demo.utils;
+package com.tencent.navix.utils;
 
 //import androidx.annotation.NonNull;
 

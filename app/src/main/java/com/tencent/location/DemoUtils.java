@@ -1,4 +1,4 @@
-package com.tencent.example.location;
+package com.tencent.location;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;

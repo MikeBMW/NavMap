@@ -1,4 +1,4 @@
-package com.tencent.navix.demo;
+package com.tencent.navix;
 
 import android.app.Application;
 

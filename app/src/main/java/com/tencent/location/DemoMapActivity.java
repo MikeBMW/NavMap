@@ -1,4 +1,4 @@
-package com.tencent.example.location;
+package com.tencent.location;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -7,7 +7,6 @@ import android.widget.TextView;
 // 定位app新增
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import androidx.appcompat.app.AppCompatActivity;
 //import java.util.Pair;
 import android.util.Pair;
 
@@ -16,7 +15,7 @@ import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
 import com.tencent.map.geolocation.TencentLocationRequest;
-import com.tencent.navix.demo.R;
+import com.tencent.navix.R;
 import com.tencent.tencentmap.mapsdk.maps.CameraUpdate;
 import com.tencent.tencentmap.mapsdk.maps.CameraUpdateFactory;
 import com.tencent.tencentmap.mapsdk.maps.MapView;

@@ -1,4 +1,4 @@
-package com.tencent.navix.demo.permission;
+package com.tencent.navix.permission;
 
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.os.Build.VERSION_CODES.M;
@@ -11,9 +11,11 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
-import androidx.annotation.Nullable;
+//import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import org.jetbrains.annotations.Nullable;
 
 public class BasePermissionActivity extends AppCompatActivity {
 
