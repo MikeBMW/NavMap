@@ -1,2 +1,2 @@
-## 运行Demo注意项
-需要将Manifest中的TencentMapSDK的开发者key设置为自己的可用KEY
+## Navigation AI
+2025-11-24 改名 Nav-AI
