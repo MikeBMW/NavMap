@@ -34,7 +34,7 @@ public class NavigationManager {
     private String currentDestination;
 
     // 路线偏离检测
-    private static final double ROUTE_DEVIATION_THRESHOLD = 50.0; // 偏离阈值50米
+    private static final double ROUTE_DEVIATION_THRESHOLD = 200.0; // 偏离阈值50米
     private boolean isReplanning = false; // 防止重复重新规划
 
     // 当前位置信息 - 通过外部设置

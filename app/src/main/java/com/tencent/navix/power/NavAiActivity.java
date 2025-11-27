@@ -272,7 +272,7 @@ public class NavAiActivity extends BaseNavActivity
                                         setupTestMonitor();
 
                                         // 在导航启动后添加
-                                        manuallyCheckLocationUpdates();
+//                                        manuallyCheckLocationUpdates();
 
                                     } catch (Exception e) {
                                         Log.e(TAG, "❌ 模拟器配置或导航启动失败", e);
@@ -572,7 +572,7 @@ public class NavAiActivity extends BaseNavActivity
             boolean isDeviated = navDataBuilder.isRouteDeviated(location, currentRoute);
             if (isDeviated) {
                 Log.w(TAG, "⚠️ 检测到路线偏离");
-                uiManager.showToast("检测到路线偏离，重新规划中...");
+                uiManager.showToast("检测到路线偏离，大于500米");
             }
         }
 
@@ -620,10 +620,6 @@ public class NavAiActivity extends BaseNavActivity
 
         uiManager.updateNavigationStatus(true, navigationManager.getCurrentDestination());
 
-//        // 重新注册定位监听，确保导航过程中能持续获取位置
-//        if (locationManager != null) {
-//            locationManager.restartLocationUpdates();
-//        }
         // 重新注册定位监听，确保导航过程中能持续获取位置
         if (locationManager != null) {
             // 🔥 关键修复：使用新的重新注册方法
@@ -654,7 +650,7 @@ public class NavAiActivity extends BaseNavActivity
     @Override
     public void onRouteDeviationDetected() {
         Log.w(TAG, "检测到路线偏离");
-        uiManager.showToast("检测到路线偏离，重新规划...");
+        uiManager.showToast("检测到路线偏离，检查1");
         // NavigationManager 会自动处理重新规划
     }
 

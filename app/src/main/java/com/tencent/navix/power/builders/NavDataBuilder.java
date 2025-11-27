@@ -5,6 +5,7 @@ import android.util.Log;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.navix.api.model.NavDriveDataInfoEx;
 import com.tencent.navix.api.model.NavDriveRoute;
+import com.tencent.navix.power.managers.UIManager;
 import com.tencent.navix.power.models.TrafficEvent;
 import com.tencent.navix.power.models.TrafficLight;
 import com.tencent.navix.power.models.RouteOverview;
@@ -21,7 +22,7 @@ public class NavDataBuilder {
     private static final String TAG = "NavDataBuilder";
 
     // 配置参数 -> 导航路径
-    private static final double ROUTE_DEVIATION_THRESHOLD = 100.0; // 偏离阈值100米
+    private static final double ROUTE_DEVIATION_THRESHOLD = 1000.0; // 偏离阈值100米
     private static final int MAX_TRAFFIC_DISTANCE = 0xFFFF; // 最大交通事件距离
     //配置参数 -> 红绿灯
     private static final byte MAX_REMAINING_TIME = 20; // 最大剩余时间
