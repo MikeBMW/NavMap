@@ -1,6 +1,7 @@
 package com.tencent.navix.power.managers;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -114,6 +115,11 @@ public class UIManager {
         // 设置默认IP端口
         if (etIpPort != null && etIpPort.getText().toString().trim().isEmpty()) {
             etIpPort.setText("192.168.1.30:54330");
+        }
+        // 设置目的地默认值
+        if (etDestination != null && etDestination.getText().toString().trim().isEmpty()) {
+            etDestination.setText("沈阳南站");
+            etDestination.setTextColor(Color.BLACK);
         }
 
         // 设置默认位置信息
@@ -459,16 +465,26 @@ public class UIManager {
             return;
         }
 
+
+
         runOnUiThread(() -> {
             // 确保调试面板可见
             if (debugPanel.getVisibility() != View.VISIBLE) {
                 debugPanel.setVisibility(View.VISIBLE);
             }
 
-            // 使用DataPacker获取格式化的十六进制显示
-            DataPacker dataPacker = DataPacker.getInstance();
-            String hexString = dataPacker.getPacketHexString(payload);
+            // 格式化十六进制字符串，每个字节之间添加空格
+            StringBuilder hexStringBuilder = new StringBuilder();
+            for (byte b : payload) {
+                hexStringBuilder.append(String.format("%02X ", b));
+            }
+            String hexString = hexStringBuilder.toString().trim(); // 移除最后的空格
             debugHex.setText(hexString);
+
+//            // 使用DataPacker获取格式化的十六进制显示
+            DataPacker dataPacker = DataPacker.getInstance();
+//            String hexString = dataPacker.getPacketHexString(payload);
+//            debugHex.setText(hexString);
 
             // 使用DataPacker解析数据包用于调试显示
             String debugInfo = dataPacker.parsePacketForDebug(payload);

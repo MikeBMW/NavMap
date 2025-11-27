@@ -384,14 +384,14 @@ public class NavAiActivity extends BaseNavActivity
             navigationManager = new NavigationManager(this, this, navigatorDrive);
             Log.d(TAG, "NavigationManager初始化成功");
 
-            // ⭐ 关键修复：如果有缓存的定位信息，立即传递给 NavigationManager
-            if (locationManager.hasValidLocation()) {
-                TencentLocation currentLocation = locationManager.getCurrentLocation();
-                if (currentLocation != null) {
-                    navigationManager.setCurrentLocation(currentLocation);
-                    Log.d(TAG, "✅ 初始化时设置当前位置: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude());
-                }
-            }
+            // ⭐ 关键修复：如果有缓存的定位信息，立即传递给 NavigationManager   不能有，否则总会到  北京 回放地点
+//            if (locationManager.hasValidLocation()) {
+//                TencentLocation currentLocation = locationManager.getCurrentLocation();
+//                if (currentLocation != null) {
+//                    navigationManager.setCurrentLocation(currentLocation);
+//                    Log.d(TAG, "✅ 初始化时设置当前位置: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude());
+//                }
+//            }
 
             webSocketManager = new WebSocketManager();
             Log.d(TAG, "WebSocketManager初始化成功");
@@ -729,7 +729,7 @@ public class NavAiActivity extends BaseNavActivity
             // 构建数据结构
             TrafficEvent trafficEvent = navDataBuilder.buildTrafficEvent(currentRoute, navInfo);
             TrafficLight trafficLight = navDataBuilder.buildTrafficLight(currentRoute, currentLocation, navInfo);
-            RouteOverview routeOverview = navDataBuilder.buildRouteOverview(currentRoute);
+            RouteOverview routeOverview = navDataBuilder.buildRouteOverview(currentRoute, navInfo);
             Weather weather = weatherManager.buildWeather(currentRoute);
 
             Log.d(TAG, "✅ 数据结构构建完成: " +

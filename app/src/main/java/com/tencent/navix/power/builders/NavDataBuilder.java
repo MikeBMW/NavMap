@@ -20,9 +20,20 @@ import java.util.List;
 public class NavDataBuilder {
     private static final String TAG = "NavDataBuilder";
 
-    // 配置参数
-    private static final double ROUTE_DEVIATION_THRESHOLD = 50.0; // 偏离阈值50米
+    // 配置参数 -> 导航路径
+    private static final double ROUTE_DEVIATION_THRESHOLD = 100.0; // 偏离阈值100米
     private static final int MAX_TRAFFIC_DISTANCE = 0xFFFF; // 最大交通事件距离
+    //配置参数 -> 红绿灯
+    private static final byte MAX_REMAINING_TIME = 20; // 最大剩余时间
+    private static final double PASS_THRESHOLD = 20.0; // 通过红绿灯的阈值距离（米）
+
+    // 交通灯状态管理
+    private byte currentLightId = 0; // 当前下一个红绿灯ID
+    private byte lastRemainingTime = MAX_REMAINING_TIME;
+    private long lastUpdateTime = 0;
+    private boolean isInitialized = false;
+    private NavDriveRoute lastRoute = null;
+    private int totalLights = 0; // 总红绿灯数量
 
     /**
      * 构建交通事件数据
@@ -119,63 +130,131 @@ public class NavDataBuilder {
         }
 
         try {
+            // 检查是否是新路线，需要重置状态
+            if (lastRoute != currentRoute) {
+                resetTrafficLightState(currentRoute);
+                lastRoute = currentRoute;
+            }
             int speedMain = 0;
             if (navInfo != null) {
                 speedMain = navInfo.getSpeedKMH();
             }
 
+//            List<?> lights = (List<?>) ReflectUtil.getField(currentRoute, "trafficLights");
+//            if (lights == null || lights.isEmpty()) {
+//                Log.d(TAG, "没有交通灯数据");
+//                return light;
+//            }
             List<?> lights = (List<?>) ReflectUtil.getField(currentRoute, "trafficLights");
             if (lights == null || lights.isEmpty()) {
                 Log.d(TAG, "没有交通灯数据");
-                return light;
+                return createDefaultTrafficLight();
+            }
+
+            // 确保当前灯ID在有效范围内
+            if (currentLightId >= totalLights) {
+                Log.d(TAG, "已通过所有红绿灯");
+                return createDefaultTrafficLight();
             }
 
             /* 1. 自车实时位置 */
             double carLat = currentLocation.getLatitude();
             double carLon = currentLocation.getLongitude();
             double speedMps = calculateSpeedFromLocation(currentLocation);
-            float speedKph = (float)(speedMps * 3.6);
 
-            if (speedMps < 0.5f) speedMps = 0.5f;
-
-            /* 2. 取最近一盏灯（这里简化：列表第 0 个） */
-            Object firstLight = lights.get(0);
-
-            /* 3. 获取交通灯位置 */
-            Object latLng = ReflectUtil.getField(firstLight, "latLng");
-            double lightLat = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "latitude"), 0);
-            double lightLon = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "longitude"), 0);
-
-            int positionIndex = ReflectUtil.toInt(ReflectUtil.getField(firstLight, "pointIndex"), 0);
-
-            /* 4. 直线距离 m + 到达时间 s */
-            double dist = calculateHaversineDistance(carLat, carLon, lightLat, lightLon);
-            int eta = (int) (dist / speedMps);
-
-            /* 5. 灯态 & 剩余秒数（基于实时车速） */
-            int state, remaining;
-            if (speedKph > 30) {          // 车速较快，假设绿灯
-                state = 1;
-                remaining = 10 + (eta % 16);   // 10~25 s
-            } else {                      // 车速较慢，假设红灯
-                state = 0;
-                remaining = 25 + (eta % 21);   // 25~45 s
+            /* 2. 获取当前下一个红绿灯的位置和距离 */
+            TrafficLightInfo lightInfo = getCurrentTrafficLightInfo(lights, carLat, carLon);
+            if (lightInfo == null) {
+                Log.d(TAG, "无法获取红绿灯信息");
+                return createDefaultTrafficLight();
             }
 
+            double distanceToNextLight = lightInfo.distance;
+            Object currentLight = lightInfo.lightObject;
+
+            /* 3. 初始化交通灯状态管理 */
+            if (!isInitialized) {
+                initializeTrafficLightState();
+            }
+
+            /* 4. 更新交通灯状态 */
+            updateTrafficLightState((byte) speedMain, (short) distanceToNextLight);
+
+            /* 5. 检查是否通过当前红绿灯 */
+            if (distanceToNextLight <= PASS_THRESHOLD) {
+                passCurrentLight();
+                // 重新获取下一个红绿灯信息
+                if (currentLightId < totalLights) {
+                    lightInfo = getCurrentTrafficLightInfo(lights, carLat, carLon);
+                    if (lightInfo != null) {
+                        distanceToNextLight = lightInfo.distance;
+                    }
+                }
+            }
+
+            /* 6. 灯态（基于实时车速） */
+            int state = (speedMain > 30) ? 1 : 0; // 1=绿灯, 0=红灯
             int speedKphInt = Math.min(255, Math.max(0, speedMain)); // 0-255
-            int lightCount = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "trafficLightCount"), 0);
 
-            /* 6. 打包 */
-            light.setNextLightId((byte) Math.min(positionIndex & 0xFF, 0xFF));
+            /* 7. 打包 */
+            light.setNextLightId(currentLightId);
             light.setStateFlags((byte) (((0 & 0x03) << 4) | ((state & 0x03) << 2)));
-            light.setPositionIndex((short) Math.min(positionIndex, 0xFFFF));
-            light.setRemainingTime((byte) Math.min(remaining, 0xFF));
-            light.setDistanceToLight((byte) Math.min((int) dist, 0xFF));
+            light.setDistanceToNextLight((short) Math.min(distanceToNextLight, 0xFFFF));
+            light.setRemainingTime(lastRemainingTime);
+            light.setDistanceToLight((byte) Math.min((int) distanceToNextLight, 0xFF));
             light.setSpeed((byte) speedKphInt);
-            light.setLightCount((byte) Math.min(255, lightCount));
+            light.setLightCount((byte) Math.min(255, totalLights));
 
-            Log.d(TAG, String.format("构建交通灯: 距离=%dm, 剩余时间=%ds, 状态=%d",
-                    (int) dist, remaining, state));
+            Log.d(TAG, String.format("构建交通灯: 下一个灯ID=%d, 距离=%.1fm, 剩余时间=%ds, 状态=%d, 车速=%dkm/h, 总灯数=%d",
+                    currentLightId, distanceToNextLight, lastRemainingTime, state, speedKphInt, totalLights));
+
+
+
+
+//            float speedKph = (float)(speedMps * 3.6);
+
+//            if (speedMps < 0.5f) speedMps = 0.5f;
+
+            /* 2. 取最近一盏灯（这里简化：列表第 0 个） */
+//            Object firstLight = lights.get(0);
+
+
+            /* 3. 获取交通灯位置 */
+//            Object latLng = ReflectUtil.getField(firstLight, "latLng");
+//            double lightLat = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "latitude"), 0);
+//            double lightLon = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "longitude"), 0);
+
+//            int positionIndex = ReflectUtil.toInt(ReflectUtil.getField(firstLight, "pointIndex"), 0);
+//            short distanceToNextLight = 1000;
+            /* 4. 直线距离 m + 到达时间 s */
+//            double dist = calculateHaversineDistance(carLat, carLon, lightLat, lightLon);
+//            int eta = (int) (dist / speedMps);
+
+            /* 5. 灯态 & 剩余秒数（基于实时车速） */
+//            int state, remaining;
+//            if (speedKph > 30) {          // 车速较快，假设绿灯
+//                state = 1;
+//                remaining = 10 + (eta % 16);   // 10~25 s
+//            } else {                      // 车速较慢，假设红灯
+//                state = 0;
+//                remaining = 25 + (eta % 21);   // 25~45 s
+//            }
+
+
+//            int lightCount = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "trafficLightCount"), 0);
+
+//            /* 6. 打包 */
+//            light.setNextLightId((byte) Math.min(positionIndex & 0xFF, 0xFF));
+//            light.setStateFlags((byte) (((0 & 0x03) << 4) | ((state & 0x03) << 2)));
+////            light.setPositionIndex((short) Math.min(positionIndex, 0xFFFF));
+//            light.setDistanceToNextLight((short) Math.min(distanceToNextLight, 0xFFFF));
+//            light.setRemainingTime((byte) Math.min(remaining, 0xFF));
+//            light.setDistanceToLight((byte) Math.min((int) dist, 0xFF));
+//            light.setSpeed((byte) speedKphInt);
+//            light.setLightCount((byte) Math.min(255, lightCount));
+
+//            Log.d(TAG, String.format("构建交通灯: 距离=%dm, 剩余时间=%ds, 状态=%d",
+//                    (int) dist, remaining, state));
 
         } catch (Exception e) {
             Log.e(TAG, "构建交通灯数据失败", e);
@@ -185,10 +264,138 @@ public class NavDataBuilder {
         return light;
     }
 
+//    /**
+//     * 初始化交通灯状态
+//     */
+//    private void initializeTrafficLightState() {
+//        currentLightId = 0;
+//        lastRemainingTime = MAX_REMAINING_TIME;
+//        lastUpdateTime = System.currentTimeMillis();
+//        isInitialized = true;
+//        Log.d(TAG, "交通灯状态管理初始化完成");
+//    }
+    /**
+     * 初始化交通灯状态
+     */
+    private void initializeTrafficLightState() {
+        currentLightId = 0;
+        lastRemainingTime = MAX_REMAINING_TIME;
+        lastUpdateTime = System.currentTimeMillis();
+        isInitialized = true;
+        Log.d(TAG, "交通灯状态管理初始化完成，总灯数: " + totalLights);
+    }
+
+    /**
+     * 获取当前下一个红绿灯的信息
+     */
+    private TrafficLightInfo getCurrentTrafficLightInfo(List<?> lights, double carLat, double carLon) {
+        if (lights == null || lights.isEmpty() || currentLightId >= lights.size()) {
+            return null;
+        }
+
+        try {
+            Object light = lights.get(currentLightId);
+            Object latLng = ReflectUtil.getField(light, "latLng");
+            double lightLat = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "latitude"), 0);
+            double lightLon = ReflectUtil.toDouble(ReflectUtil.getField(latLng, "longitude"), 0);
+
+            double distance = calculateHaversineDistance(carLat, carLon, lightLat, lightLon);
+
+            return new TrafficLightInfo(currentLightId, distance, light);
+        } catch (Exception e) {
+            Log.e(TAG, "获取红绿灯信息失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 更新交通灯状态
+     */
+    private void updateTrafficLightState(byte currentSpeed, short distanceToNextLight) {
+        long currentTime = System.currentTimeMillis();
+        long elapsedSeconds = (currentTime - lastUpdateTime) / 1000;
+
+        if (elapsedSeconds > 0) {
+            updateRemainingTime((int) elapsedSeconds, currentSpeed);
+            lastUpdateTime = currentTime;
+        }
+    }
+
+    /**
+     * 更新剩余时间算法
+     */
+    private void updateRemainingTime(int elapsedSeconds, byte currentSpeed) {
+        for (int i = 0; i < elapsedSeconds; i++) {
+            if (currentSpeed > 5) {
+                // 车速 > 5km/h，时间递减
+                if (lastRemainingTime > 0) {
+                    lastRemainingTime--;
+                }
+            } else {
+                // 车速 <= 5km/h，时间递增
+                if (lastRemainingTime < MAX_REMAINING_TIME) {
+                    lastRemainingTime++;
+                }
+            }
+        }
+    }
+
+    /**
+     * 通过当前红绿灯
+     */
+    private void passCurrentLight() {
+        if (currentLightId < totalLights - 1) {
+            currentLightId++;
+            lastRemainingTime = MAX_REMAINING_TIME;
+            Log.d(TAG, "通过红绿灯，切换到下一个灯ID: " + currentLightId);
+        } else {
+            currentLightId = (byte) totalLights; // 设置为超出范围，表示已通过所有灯
+            Log.d(TAG, "已通过所有红绿灯");
+        }
+    }
+
+    /**
+     * 重置交通灯状态（当开始新的导航时调用）
+     */
+    public void resetTrafficLightState(NavDriveRoute currentRoute) {
+        if (currentRoute != null) {
+            try {
+                List<?> lights = (List<?>) ReflectUtil.getField(currentRoute, "trafficLights");
+                totalLights = (lights != null) ? lights.size() : 0;
+            } catch (Exception e) {
+                Log.e(TAG, "获取红绿灯数量失败", e);
+                totalLights = 0;
+            }
+        }
+
+        currentLightId = 0;
+        lastRemainingTime = MAX_REMAINING_TIME;
+        lastUpdateTime = System.currentTimeMillis();
+        isInitialized = false;
+        lastRoute = null;
+
+        Log.d(TAG, "交通灯状态已重置，总灯数: " + totalLights);
+    }
+
+    /**
+     * 红绿灯信息类
+     */
+    private static class TrafficLightInfo {
+        public byte lightId;
+        public double distance;
+        public Object lightObject;
+
+        public TrafficLightInfo(byte lightId, double distance, Object lightObject) {
+            this.lightId = lightId;
+            this.distance = distance;
+            this.lightObject = lightObject;
+        }
+    }
+
     /**
      * 构建路线概览数据
      */
-    public RouteOverview buildRouteOverview(NavDriveRoute currentRoute) {
+    public RouteOverview buildRouteOverview(NavDriveRoute currentRoute, NavDriveDataInfoEx navInfo) {
         RouteOverview overview = new RouteOverview();
 
         if (currentRoute == null) {
@@ -199,12 +406,42 @@ public class NavDataBuilder {
         try {
             /* 1. 距离 & 费用 */
             int totalDistance = (int) Math.max(0, currentRoute.getDistance());
+            int passedDistance = 0;
+            int leftDistance = totalDistance;
+            // 如果有实时导航信息，使用实时计算的剩余距离
+            if (navInfo != null) {
+                passedDistance = navInfo.getPassedDistance();
+                leftDistance = totalDistance - passedDistance;
+
+                // 确保剩余距离不会为负数
+                if (leftDistance < 0) {
+                    leftDistance = 0;
+                }
+            }
             int tollDistance = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "tollDistance"), 0);
             int tollPct = totalDistance == 0 ? 0
                     : (int) Math.min(100, tollDistance * 100L / totalDistance);
 
             /* 2. 剩余 estimatedTime */
-            int durationMin = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "time"), 0);
+//            int durationMin = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "time"), 0);
+            /* 2. 剩余 estimatedTime - 使用实时计算的剩余时间 */
+            int totalTimeMinutes = ReflectUtil.toInt(ReflectUtil.getField(currentRoute, "time"), 0);
+            int leftTimeMinutes = totalTimeMinutes;
+
+            // 如果有实时导航信息，使用实时计算的剩余时间
+            if (navInfo != null) {
+                int totalTimeSeconds = totalTimeMinutes * 60;
+                int passedTimeSeconds = navInfo.getPassedTime();
+                int leftTimeSeconds = totalTimeSeconds - passedTimeSeconds;
+
+                // 确保剩余时间不会为负数
+                if (leftTimeSeconds < 0) {
+                    leftTimeSeconds = 0;
+                }
+
+                leftTimeMinutes = (int) Math.ceil(leftTimeSeconds / 60.0);
+            }
+
 
             long feeDeci = Math.round(Math.max(0.0, currentRoute.getFee()) * 10.0);
             feeDeci = Math.min(feeDeci, 0xFFFF);
@@ -255,14 +492,19 @@ public class NavDataBuilder {
                             ((jam   / 10) & 0x0F));
 
             /* 6. 填充结构体 */
-            overview.setTotalDistance((short) Math.min(totalDistance, 0xFFFF));
+//            overview.setTotalDistance((short) Math.min(totalDistance, 0xFFFF));
+            overview.setTotalDistance((short) Math.min(leftDistance, 0xFFFF)); // 使用剩余距离
             overview.setTollDistancePct((byte) tollPct);
             overview.setCongestionFlags(congestionFlags);
-            overview.setEstimatedTime((short) Math.min(durationMin, 0xFFFF));
+//            overview.setEstimatedTime((short) Math.min(durationMin, 0xFFFF));
+            overview.setEstimatedTime((short) Math.min(leftTimeMinutes, 0xFFFF)); // 使用剩余时间
             overview.setTotalFee((short) Math.min(feeDeci, 0xFFFF));
 
-            Log.d(TAG, String.format("构建路线概览: 距离=%.1fkm, 时间=%dmin, 费用=%.1f元",
-                    totalDistance / 1000.0, durationMin, feeDeci / 10.0));
+//            Log.d(TAG, String.format("构建路线概览: 距离=%.1fkm, 时间=%dmin, 费用=%.1f元",
+//                    totalDistance / 1000.0, durationMin, feeDeci / 10.0));
+            Log.d(TAG, String.format("构建路线概览: 总距离=%.1fkm, 已行驶=%.1fkm, 剩余距离=%.1fkm, 剩余时间=%dmin, 费用=%.1f元",
+                    totalDistance / 1000.0, passedDistance / 1000.0, leftDistance / 1000.0,
+                    leftTimeMinutes, feeDeci / 10.0));
 
         } catch (Exception e) {
             Log.e(TAG, "构建路线概览失败", e);
@@ -326,7 +568,8 @@ public class NavDataBuilder {
         TrafficLight light = new TrafficLight();
         light.setNextLightId((byte) 0);
         light.setStateFlags((byte) 0);
-        light.setPositionIndex((short) 0);
+//        light.setPositionIndex((short) 0);
+        light.setDistanceToNextLight((short) 0);
         light.setRemainingTime((byte) 0);
         light.setDistanceToLight((byte) 0);
         light.setSpeed((byte) 0);

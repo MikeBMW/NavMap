@@ -5,10 +5,11 @@ package com.tencent.navix.power.models;
  */
 public class TrafficLight {
     public byte nextLightId;       // 下一个红绿灯ID
-    public byte stateFlags;        // 状态标志 (bit5-4=类型, bit3-2=状态)
-    public short positionIndex;    // 位置索引
+    public byte stateFlags;        // 状态标志 (bit5-4=类型, bit3-2=状态)  bit1和bit0为是否通过的标记，bit 0 通过则置1，未通过置0； bit1 预留置0
+//    public short positionIndex;    // 位置索引
+    public short distanceToNextLight;    // 位置索引 改成  distanceToNextLight  到下一个红绿灯的距离 (米)
     public byte remainingTime;     // 剩余时间 (秒)
-    public byte distanceToLight;   // 到红绿灯距离 (米)
+    public byte distanceToLight;   // 【预留】到红绿灯距离 (米)
     public byte speed;             // 速度 (km/h)
     public byte lightCount;        // 红绿灯总数
 
@@ -33,12 +34,18 @@ public class TrafficLight {
         this.stateFlags = stateFlags;
     }
 
-    public short getPositionIndex() {
-        return positionIndex;
+//    public short getPositionIndex() {
+//        return positionIndex;
+//    }
+    public short getDistanceToNextLight() {
+        return distanceToNextLight;
     }
 
-    public void setPositionIndex(short positionIndex) {
-        this.positionIndex = positionIndex;
+//    public void setPositionIndex(short positionIndex) {
+//        this.positionIndex = positionIndex;
+//    }
+    public void setDistanceToNextLight(short distanceToNextLight) {
+        this.distanceToNextLight = distanceToNextLight;
     }
 
     public byte getRemainingTime() {

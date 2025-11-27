@@ -139,7 +139,9 @@ public class DataPacker {
             buffer.put(light.getStateFlags());
 
             // 字节2-3: positionIndex (小端序)
-            buffer.putShort(light.getPositionIndex());
+//            buffer.putShort(light.getPositionIndex());
+            // 字节2-3: positionIndex (小端序)
+            buffer.putShort(light.getDistanceToNextLight());
 
             // 字节4: remainingTime
             buffer.put(light.getRemainingTime());
@@ -316,17 +318,23 @@ public class DataPacker {
             // 3. TrafficLight (8字节)
             byte nextLightId = buffer.get();
             byte stateFlags = buffer.get();
-            short positionIndex = buffer.getShort();
+//            short positionIndex = buffer.getShort();
+            short distanceToNextLight = buffer.getShort();
             byte remainingTime = buffer.get();
             byte distanceToLight = buffer.get();
             byte speed = buffer.get();
             byte lightCount = buffer.get();
 
             int lightState = (stateFlags >> 2) & 0x03;
+//            debugInfo.append(String.format(
+//                    "交通灯: ID=%d, 状态=%d, 剩余时间=%ds, 距离=%dm, 速度=%dkm/h, 总数=%d\n",
+//                    nextLightId & 0xFF, lightState, remainingTime & 0xFF,
+//                    distanceToLight & 0xFF, speed & 0xFF, lightCount & 0xFF
+//            ));
             debugInfo.append(String.format(
                     "交通灯: ID=%d, 状态=%d, 剩余时间=%ds, 距离=%dm, 速度=%dkm/h, 总数=%d\n",
                     nextLightId & 0xFF, lightState, remainingTime & 0xFF,
-                    distanceToLight & 0xFF, speed & 0xFF, lightCount & 0xFF
+                    distanceToNextLight & 0xFFFF, speed & 0xFF, lightCount & 0xFF
             ));
 
             // 4. RouteOverview (8字节)
@@ -363,7 +371,7 @@ public class DataPacker {
             int temperatureCelsius = (realTemperature & 0xFF) - 40;
 
             debugInfo.append(String.format(
-                    "天气: 路线哈希=%d, 有效=%d, 天气码=%d, 温度=%d°C, 置信度=%d, 距离=%dm\n",
+                    "天气预报: 路线哈希=%d, 有效=%d, 天气码=%d, 温度=%d°C, 置信度=%d, 覆盖距离=%dm\n",
                     routeHash, dataValid, weatherCode, temperatureCelsius,
                     tempConfidence, weatherTotalDistance & 0xFFFF
             ));
