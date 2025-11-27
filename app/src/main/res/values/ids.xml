@@ -5,6 +5,30 @@
     <item name="btn_confirm_destination" type="id"/>
     <item name="left_center_panel" type="id"/>
     <item name="right_center_panel" type="id"/>
+    <item name="control_panel" type="id"/>
+    <item name="control_panel_title" type="id"/>
+    <item name="tv_speed_info" type="id"/>
+    <item name="iv_weather_icon" type="id"/>
+    <item name="tv_weather_temp" type="id"/>
+    <item name="tv_weather_desc" type="id"/>
+    <item name="debug_panel" type="id"/>
+    <item name="debug_title" type="id"/>
+    <item name="debug_hex" type="id"/>
+    <item name="debug_fields" type="id"/>
+    <item name="btn_show_control_panel" type="id"/>
+    <item name="btn_show_debug_panel" type="id"/>
+<!--    <item name="control_panel" type="id">control_panel</item>-->
+<!--    <item name="control_panel_title" type="id">control_panel_title</item>-->
+<!--    <item name="tv_speed_info" type="id">tv_speed_info</item>-->
+<!--    <item name="iv_weather_icon" type="id">iv_weather_icon</item>-->
+<!--    <item name="tv_weather_temp" type="id">iv_weather_icon</item>-->
+<!--    <item name="tv_weather_desc" type="id">tv_weather_desc</item>-->
+<!--    <item name="debug_panel" type="id">debug_panel</item>-->
+<!--    <item name="debug_title" type="id">debug_title</item>-->
+<!--    <item name="debug_hex" type="id">debug_hex</item>-->
+<!--    <item name="debug_fields" type="id">debug_fields</item>-->
+<!--    <item name="btn_show_control_panel" type="id">btn_show_control_panel</item>-->
+<!--    <item name="btn_show_debug_panel" type="id">btn_show_debug_panel</item>-->
     <!--    <item name="top_padding" type="id"/>-->
 </resources>
 

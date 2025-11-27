@@ -40,25 +40,20 @@
             android:name="TencentMapWebServiceKey"
             android:value="CJZBZ-5EXW4-2UQUY-FSM3S-TUXS3-PWFDF" />
 
-        <activity
-            android:name="com.tencent.navix.MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <category android:name="android.intent.category.LAUNCHER" />
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
-        <activity android:name="com.tencent.navix.navi.WalkSimNavActivity" />
-        <activity android:name="com.tencent.navix.navi.WalkGpsNavActivity" />
+<!--        <activity-->
+<!--            android:name="com.tencent.navix.MainActivity"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
         <activity android:name="com.tencent.navix.navi.SimulationNavActivity" />
         <activity android:name="com.tencent.navix.navi.PlaybackNavActivity" />
         <activity android:name="com.tencent.navix.navi.DialogBasedNavActivity" />
         <activity android:name="com.tencent.navix.navi.LandscapeSimulationNavActivity"
             android:configChanges="keyboardHidden|screenSize|orientation"
             />
-        <activity
-            android:name="com.tencent.location.DemoMapActivity"
-            android:label="我的位置" />
         <activity
             android:name="com.tencent.navix.navi.GpsNavLocActivity"
             android:label="GpsNavLocActivity"
@@ -73,5 +68,20 @@
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true">
         </activity>
+
+        <!-- 将TestLauncherActivity设为启动Activity -->
+        <activity
+            android:name=".power.test.TestLauncherActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 原有的NavAiActivity -->
+        <activity
+            android:name=".power.NavAiActivity"
+            android:exported="false" />
     </application>
 </manifest>

@@ -15,5 +15,5 @@ dependencyResolutionManagement {
         }
     }
 }
-rootProject.name = "tencent-navigation-demo"
+rootProject.name = "tencent-navigation"
 include ':app'
