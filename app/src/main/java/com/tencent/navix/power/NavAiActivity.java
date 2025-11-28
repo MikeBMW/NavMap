@@ -569,6 +569,7 @@ public class NavAiActivity extends BaseNavActivity
 
         // 检查路线偏离
         if (isNavigating && currentRoute != null) {
+            //暂时先用navDataBuilder  ，但是应该是navigationManager,只不过之前定义的是private
             boolean isDeviated = navDataBuilder.isRouteDeviated(location, currentRoute);
             if (isDeviated) {
                 Log.w(TAG, "⚠️ 检测到路线偏离");

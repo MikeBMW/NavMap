@@ -26,7 +26,7 @@ public class NavDataBuilder {
     private static final int MAX_TRAFFIC_DISTANCE = 0xFFFF; // 最大交通事件距离
     //配置参数 -> 红绿灯
     private static final byte MAX_REMAINING_TIME = 20; // 最大剩余时间
-    private static final double PASS_THRESHOLD = 20.0; // 通过红绿灯的阈值距离（米）
+    private static final double PASS_THRESHOLD = 50.0; // 通过红绿灯的阈值距离（米）  20米向右转太近了。
 
     // 交通灯状态管理
     private byte currentLightId = 0; // 当前下一个红绿灯ID
